@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "recipe-manager": {
+      "command": "python",
+      "args": ["main.py"],
+      "env": {
+        "API_BASE_URL": "http://localhost:3000",
+        "DEFAULT_USER_ID": "clzej3dqz0000inntk5x0bqrr"
+      },
+      "timeout": 60000
+    }
+  }
+}

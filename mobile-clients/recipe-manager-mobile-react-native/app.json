@@ -1,0 +1,71 @@
+{
+  "expo": {
+    "name": "Zesty",
+    "slug": "recipe-manager-mobile",
+    "version": "1.2.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "buildNumber": "16",
+      "supportsTablet": true,
+      "bundleIdentifier": "com.leonchike.recipe-manager-mobile",
+      "infoPlist": {
+        "CFBundleDisplayName": "Zesty",
+        "CFBundleShortVersionString": "1.2.0",
+        "CFBundleVersion": "1",
+        "NSPhotoLibraryUsageDescription": "Zesty uses your photo library to let you upload an image for your recipe. This image will appear as the main recipe image.",
+        "NSCameraUsageDescription": "Zesty uses your camera to let you upload an image for your recipe. This image will appear as the main recipe image.",
+        "UIRequiresFullScreen": false,
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.451622097622-cll5o3t3elsom0c3n0ot2irkkdndal5l"
+            ]
+          }
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.leonchike.recipemanagermobile"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      "expo-notifications"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "5ebaeaf4-59a8-4c6d-bf82-5d1e60cf6e38"
+      }
+    },
+    "owner": "leonchike"
+  }
+}

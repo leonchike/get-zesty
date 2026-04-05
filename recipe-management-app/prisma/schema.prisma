@@ -1,0 +1,250 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String           @id @default(cuid())
+  name              String?
+  firstName         String?
+  lastName          String?
+  email             String           @unique
+  emailVerified     DateTime?
+  image             String?
+  password          String?
+  accounts          Account[]
+  sessions          Session[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  items             GroceryItem[]
+  Recipe            Recipe[]
+  FavoriteRecipe    FavoriteRecipe[]
+  PinnedRecipe      PinnedRecipe[]
+  isAccountDisabled Boolean          @default(false)
+  cookbooks         Cookbook[]
+  cookbookRecipes   CookbookRecipe[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model GroceryItem {
+  id           String             @id @default(cuid())
+  name         String
+  quantity     Int?
+  quantityUnit String?
+  userId       String
+  sectionId    String?
+  commonItemId String?
+  recipeId     String?
+  status       GroceryItemStatus  @default(ACTIVE)
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  section      GrocerySection?    @relation(fields: [sectionId], references: [id])
+  commonItem   CommonGroceryItem? @relation(fields: [commonItemId], references: [id])
+  recipe       Recipe?            @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([status])
+}
+
+model GrocerySection {
+  id          String              @id @default(cuid())
+  name        String              @unique
+  items       GroceryItem[]
+  commonItems CommonGroceryItem[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @default(now()) @updatedAt
+}
+
+model CommonGroceryItem {
+  id            String         @id @default(cuid())
+  name          String         @unique
+  sectionId     String
+  section       GrocerySection @relation(fields: [sectionId], references: [id])
+  items         GroceryItem[]
+  isUserCreated Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @default(now()) @updatedAt
+}
+
+enum GroceryItemStatus {
+  ACTIVE
+  COMPLETED
+  DELETED
+}
+
+model Recipe {
+  id                  String           @id @default(cuid())
+  userId              String
+  title               String
+  description         String?
+  difficulty          RecipeDifficulty @default(EASY)
+  prepTime            Int?
+  cookTime            Int?
+  restTime            Int?
+  totalTime           Int?
+  servings            Int?
+  ingredients         String?
+  instructions        String?
+  equipment           String?
+  utensils            String?
+  nutrition           Json?
+  notes               String?
+  isPublic            Boolean          @default(false)
+  cuisineType         String?
+  mealType            String?
+  dietaryRestrictions String[]
+  tags                String[]
+  sourceUrl           String?
+  imageUrl            String?
+  rating              Float?
+  isDeleted           Boolean          @default(false)
+  reviewCount         Int              @default(0)
+  favoriteCount       Int              @default(0)
+  seasonality         String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  FavoriteRecipe      FavoriteRecipe[]
+  PinnedRecipe        PinnedRecipe[]
+  source              RecipeSource?
+  parsedIngredients   Json?
+  parsedInstructions  Json?
+  GroceryItem         GroceryItem[]
+}
+
+enum RecipeSource {
+  USER
+  SCRAPE
+  GEN_AI
+}
+
+enum RecipeDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model FavoriteRecipe {
+  id       String   @id @default(cuid())
+  userId   String
+  recipeId String
+  addedAt  DateTime @default(now())
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe   Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, recipeId])
+}
+
+model PinnedRecipe {
+  id       String   @id @default(cuid())
+  userId   String
+  recipeId String
+  pinnedAt DateTime @default(now())
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe   Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, recipeId])
+}
+
+model Cookbook {
+  id          String           @id @default(cuid())
+  userId      String
+  title       String
+  author      String?
+  publisher   String?
+  year        Int?
+  isbn        String?
+  coverUrl    String?
+  description String?
+  totalPages  Int?
+  fileType    String?          // pdf, epub
+  filePath    String?
+  isProcessed Boolean          @default(false)
+  recipeCount Int              @default(0)
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipes     CookbookRecipe[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([userId])
+}
+
+model CookbookRecipe {
+  id           String        @id @default(cuid())
+  cookbookId   String
+  userId       String
+  title        String
+  description  String?
+  ingredients  String?       @db.Text
+  instructions String?       @db.Text
+  pageNumber   Int?
+  cuisineType  String?
+  mealType     String?
+  servings     String?
+  prepTime     String?
+  cookTime     String?
+  imageUrl     String?
+  cookbook      Cookbook       @relation(fields: [cookbookId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chunks       RecipeChunk[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([cookbookId])
+}
+
+model RecipeChunk {
+  id               String         @id @default(cuid())
+  cookbookRecipeId String
+  chunkType        String         // full, ingredients, instructions, description
+  content          String         @db.Text
+  cookbookRecipe   CookbookRecipe @relation(fields: [cookbookRecipeId], references: [id], onDelete: Cascade)
+  createdAt        DateTime       @default(now())
+
+  @@index([cookbookRecipeId])
+}

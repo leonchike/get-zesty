@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  overscroll-behavior: none;
+}
+
+@layer base {
+  :root {
+    /* Warm Mediterranean palette */
+    --background: 36 33% 97%;       /* Warm cream #F9F6F1 */
+    --foreground: 30 25% 15%;       /* Warm near-black #292119 */
+    --surface: 0 0% 100%;           /* Pure white #FFFFFF */
+    --primary: 350 100% 60%;        /* Brand accent #FF385C */
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 36 15% 96%;    /* Warm hover bg */
+    --accent: 37 92% 49%;           /* Saffron #F0960A */
+    --accent-foreground: 30 25% 15%;
+    --success: 148 49% 44%;         /* Sage green #38A862 */
+    --secondary: 36 20% 94%;
+    --secondary-foreground: 30 25% 15%;
+    --muted: 36 15% 93%;
+    --muted-foreground: 30 10% 45%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 36 20% 88%;
+    --input: 36 15% 92%;
+    --ring: 350 100% 60%;
+    --card: 0 0% 100%;
+    --card-foreground: 30 25% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 30 25% 15%;
+    --sidebar-bg: 36 25% 95%;
+    --cooking-bg: 25 20% 8%;        /* Deep brown-black #1A1512 */
+    --radius: 0.5rem;
+
+    --shadow-sm: 0 1px 2px 0 rgba(41, 33, 25, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(41, 33, 25, 0.08), 0 2px 4px -2px rgba(41, 33, 25, 0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(41, 33, 25, 0.08), 0 4px 6px -4px rgba(41, 33, 25, 0.04);
+    --shadow-glow: 0 0 15px rgba(255, 56, 92, 0.15);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: 20 10% 10%;     /* Warm dark #1C1917 */
+      --foreground: 30 15% 90%;     /* Warm off-white #EDE8E2 */
+      --surface: 20 10% 14%;        /* Elevated cards #262220 */
+      --primary: 350 100% 65%;      /* Slightly brighter accent #FF4D6D */
+      --primary-foreground: 0 0% 100%;
+      --primary-hover: 20 10% 16%;
+      --accent: 37 90% 55%;         /* Warmer saffron #F5A623 */
+      --accent-foreground: 30 15% 90%;
+      --success: 148 55% 52%;       /* Brighter sage #42C974 */
+      --secondary: 20 10% 16%;
+      --secondary-foreground: 30 15% 90%;
+      --muted: 20 8% 18%;
+      --muted-foreground: 30 10% 60%;
+      --destructive: 0 63% 31%;
+      --destructive-foreground: 30 15% 90%;
+      --border: 20 8% 20%;
+      --input: 20 8% 18%;
+      --ring: 350 100% 65%;
+      --card: 20 10% 14%;
+      --card-foreground: 30 15% 90%;
+      --popover: 20 10% 14%;
+      --popover-foreground: 30 15% 90%;
+      --sidebar-bg: 20 10% 12%;
+      --cooking-bg: 25 20% 8%;
+
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.2);
+      --shadow-glow: 0 0 15px rgba(255, 77, 109, 0.2);
+    }
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .hover-shadow-custom {
+    @apply transition-shadow duration-200;
+  }
+
+  .hover-shadow-custom:hover {
+    @apply shadow-warm-md;
+  }
+
+  .shadow-custom {
+    box-shadow: var(--shadow-md);
+  }
+
+  .shadow-light {
+    box-shadow: var(--shadow-md);
+  }
+
+  .shadow-dark {
+    box-shadow: var(--shadow-md);
+  }
+
+  .bg-grain {
+    position: relative;
+  }
+
+  .bg-grain::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+    z-index: 0;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .bg-grain::before {
+      opacity: 0.05;
+    }
+  }
+
+  .skeleton-shimmer {
+    @apply animate-shimmer;
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 25%,
+      hsl(var(--border)) 50%,
+      hsl(var(--muted)) 75%
+    );
+    background-size: 400% 100%;
+  }
+}
+
+.scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* WebKit */
+}

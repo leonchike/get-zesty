@@ -1,0 +1,254 @@
+/**
+ * Types for SimBrief MCP Server
+ */
+
+// OAuth Props - User information from Google Auth
+export interface Props extends Record<string, unknown> {
+  login: string;      // Email username (before @)
+  name: string;       // Display name
+  email: string;      // Full email address
+  accessToken: string; // Google access token
+}
+
+// Import global Env type from worker-configuration
+/// <reference types="../../worker-configuration.d.ts" />
+
+// Cloudflare Worker Environment with OAuth provider
+export interface ExtendedEnv extends Env {
+  OAUTH_PROVIDER: {
+    parseAuthRequest: (request: Request) => Promise<any>;
+    lookupClient: (clientId: string) => Promise<any>;
+    completeAuthorization: (args: any) => Promise<{ redirectTo: string }>;
+  };
+  GOOGLE_CLIENT_ID: string;
+  GOOGLE_CLIENT_SECRET: string;
+  COOKIE_ENCRYPTION_KEY: string;
+  SIMBRIEF_API_KEY?: string; // Optional - improves rate limits
+  SENTRY_DSN?: string;
+}
+
+// SimBrief API response types
+export interface SimBriefFlightPlan {
+  general?: SimBriefGeneral;
+  origin?: SimBriefAirport;
+  destination?: SimBriefAirport;
+  alternate?: SimBriefAirport;
+  fuel?: SimBriefFuel;
+  weights?: SimBriefWeights;
+  weather?: SimBriefWeather;
+  params?: SimBriefParams;
+  [key: string]: any; // Allow for additional properties
+}
+
+export interface SimBriefGeneral {
+  flightnum?: string;
+  airline?: string;
+  type?: string;
+  reg?: string;
+  date?: string;
+  distance?: string;
+  flighttime?: string;
+  route?: string;
+  cruisealt?: string;
+  etops?: string;
+  [key: string]: any;
+}
+
+export interface SimBriefAirport {
+  icao?: string;
+  name?: string;
+  std?: string;
+  sta?: string;
+  runway?: string;
+  [key: string]: any;
+}
+
+export interface SimBriefFuel {
+  tripfuel?: string;
+  alternatefuel?: string;
+  reservefuel?: string;
+  contingencyfuel?: string;
+  taxifuel?: string;
+  totalfuel?: string;
+  [key: string]: any;
+}
+
+export interface SimBriefWeights {
+  pax?: string;
+  cargo?: string;
+  zfw?: string;
+  takeoff?: string;
+  landing?: string;
+  [key: string]: any;
+}
+
+export interface SimBriefWeather {
+  departure_metar?: string;
+  arrival_metar?: string;
+  avgwind_comp?: string;
+  [key: string]: any;
+}
+
+export interface SimBriefParams {
+  planid?: string;
+  [key: string]: any;
+}
+
+// Tool response types
+export interface ToolResponse {
+  content: Array<{
+    type: string;
+    text: string;
+    isError?: boolean;
+  }>;
+}
+
+export interface SimBriefApiResponse {
+  content: any;
+  metadata?: Record<string, any>;
+  message?: string;
+  error?: string;
+  isError: boolean;
+}
+
+// VATSIM ATIS types
+export interface VatsimAtisResponse {
+  /** Timestamp when data was fetched from VATSIM */
+  fetchedAt: string; // ISO 8601 datetime
+  /** Number of airports with active ATIS */
+  activeCount: number;
+  /** Results for each requested airport */
+  airports: AirportAtis[];
+}
+
+export interface AirportAtis {
+  /** ICAO code of the airport */
+  icao: string;
+  /** Whether any ATIS is active for this airport */
+  hasActiveAtis: boolean;
+  /** Combined ATIS (if available) */
+  combined: AtisData | null;
+  /** Arrival ATIS (if available) */
+  arrival: AtisData | null;
+  /** Departure ATIS (if available) */
+  departure: AtisData | null;
+}
+
+export interface AtisData {
+  /** Full callsign (e.g., "EKCH_A_ATIS") */
+  callsign: string;
+  /** ATIS information letter (e.g., "A", "B", "D") */
+  atisCode: string | null;
+  /** Radio frequency */
+  frequency: string;
+  /** ATIS text as a single joined string */
+  textAtis: string | null;
+  /** ATIS text as original array of lines */
+  textAtisLines: string[] | null;
+  /** Controller name */
+  controllerName: string;
+  /** Controller CID */
+  controllerCid: number;
+  /** When ATIS was last updated */
+  lastUpdated: string; // ISO 8601 datetime
+  /** When controller logged on */
+  logonTime: string; // ISO 8601 datetime
+}
+
+// VATSIM API raw data types (from the API response)
+export interface VatsimDataResponse {
+  general: {
+    update_timestamp: string;
+    [key: string]: any;
+  };
+  atis: VatsimAtisEntry[];
+  [key: string]: any;
+}
+
+export interface VatsimAtisEntry {
+  cid: number;
+  name: string;
+  callsign: string;
+  frequency: string;
+  facility: number;
+  rating: number;
+  server: string;
+  visual_range: number;
+  text_atis: string[] | null;
+  last_updated: string;
+  logon_time: string;
+  atis_code: string | null;
+  [key: string]: any;
+}
+
+// METAR API types
+export interface MetarApiResponse {
+  fetchedAt: string;
+  includeTaf: boolean;
+  results: MetarResult[];
+}
+
+export interface MetarResult {
+  icao: string;
+  success: boolean;
+  data?: MetarData;
+  taf?: TafData | null;
+  tafError?: string;
+  error?: string;
+}
+
+export interface MetarData {
+  icaoId: string;
+  name: string;
+  rawOb: string;
+  temp: number | null;
+  dewp: number | null;
+  wdir: number | string | null;
+  wspd: number | null;
+  wgst: number | null;
+  visib: string | number | null;
+  altim: number | null;
+  slp: number | null;
+  fltCat: string | null;
+  clouds: MetarCloud[];
+  lat: number;
+  lon: number;
+  elev: number;
+  reportTime: string;
+}
+
+export interface MetarCloud {
+  cover: string;
+  base: number;
+}
+
+// TAF API types
+export interface TafData {
+  icaoId: string;
+  name: string;
+  rawTAF: string;
+  issueTime: string;
+  validTimeFrom: number;
+  validTimeTo: number;
+  remarks: string | null;
+  fcsts: TafForecast[];
+}
+
+export interface TafForecast {
+  timeFrom: number;
+  timeTo: number;
+  fcstChange: string | null;
+  probability: number | null;
+  wdir: number | string | null;
+  wspd: number | null;
+  wgst: number | null;
+  visib: string | number | null;
+  wxString: string | null;
+  clouds: TafCloud[];
+}
+
+export interface TafCloud {
+  cover: string;
+  base: number | null;
+  type: string | null;
+}
