@@ -1,10 +1,56 @@
 import { app, BrowserWindow, shell, ipcMain, safeStorage, powerSaveBlocker, Menu } from 'electron'
 import { join } from 'path'
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs'
 import { is } from '@electron-toolkit/utils'
-import Store from 'electron-store'
 import { buildMenu } from './menu'
 
-const store = new Store()
+// Simple JSON file store (avoids ESM-only electron-store dependency)
+class JsonStore {
+  private data: Record<string, unknown> = {}
+  private filePath: string
+
+  constructor() {
+    const userDataPath = app.getPath('userData')
+    this.filePath = join(userDataPath, 'config.json')
+    this.load()
+  }
+
+  private load(): void {
+    try {
+      if (existsSync(this.filePath)) {
+        this.data = JSON.parse(readFileSync(this.filePath, 'utf-8'))
+      }
+    } catch {
+      this.data = {}
+    }
+  }
+
+  private save(): void {
+    try {
+      const dir = join(this.filePath, '..')
+      if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+      writeFileSync(this.filePath, JSON.stringify(this.data, null, 2), 'utf-8')
+    } catch {
+      // Silent fail — non-critical
+    }
+  }
+
+  get(key: string): unknown {
+    return this.data[key]
+  }
+
+  set(key: string, value: unknown): void {
+    this.data[key] = value
+    this.save()
+  }
+
+  delete(key: string): void {
+    delete this.data[key]
+    this.save()
+  }
+}
+
+const store = new JsonStore()
 
 let mainWindow: BrowserWindow | null = null
 let powerSaveId: number | null = null
@@ -25,7 +71,8 @@ function createWindow(): void {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      webSecurity: false // Disable CORS — desktop app talks directly to production API
     }
   })
 

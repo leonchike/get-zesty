@@ -40,12 +40,12 @@ export function RecipeCard({ recipe }: RecipeCardProps): JSX.Element {
 
           {/* Badges */}
           <div className="absolute top-2 right-2 flex gap-1.5">
-            {recipe.isFavorited && (
+            {recipe.FavoriteRecipe && recipe.FavoriteRecipe.length > 0 && (
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm">
                 <Heart size={14} className="fill-primary text-primary" />
               </span>
             )}
-            {recipe.isPinned && (
+            {recipe.PinnedRecipe && recipe.PinnedRecipe.length > 0 && (
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm">
                 <Pin size={14} className="text-accent" />
               </span>
@@ -69,13 +69,13 @@ export function RecipeCard({ recipe }: RecipeCardProps): JSX.Element {
 
         {/* Content */}
         <div className="p-3.5">
-          <h3 className="font-heading text-base font-semibold text-foreground line-clamp-2 leading-snug">
+          <h3 className="font-heading text-base font-semibold text-foreground line-clamp-2 leading-snug h-[2.75rem]">
             {recipe.title}
           </h3>
 
-          <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
+          <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground whitespace-nowrap overflow-hidden">
             {time && (
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1 flex-shrink-0">
                 <Clock size={12} />
                 {formatTime(time)}
               </span>
@@ -83,7 +83,7 @@ export function RecipeCard({ recipe }: RecipeCardProps): JSX.Element {
             {recipe.difficulty && (
               <span
                 className={cn(
-                  'rounded-full px-2 py-0.5 text-[10px] font-medium',
+                  'rounded-full px-2 py-0.5 text-[10px] font-medium flex-shrink-0',
                   recipe.difficulty === 'EASY' && 'bg-success/10 text-success',
                   recipe.difficulty === 'MEDIUM' && 'bg-accent/10 text-accent',
                   recipe.difficulty === 'HARD' && 'bg-destructive/10 text-destructive'

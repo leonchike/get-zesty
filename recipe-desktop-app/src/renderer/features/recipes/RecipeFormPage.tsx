@@ -122,9 +122,9 @@ export function RecipeFormPage(): JSX.Element {
         await updateRecipe.mutateAsync({ id, ...payload })
         toast.success('Recipe updated')
       } else {
-        const recipe = await createRecipe.mutateAsync(payload)
+        const result = await createRecipe.mutateAsync(payload)
         toast.success('Recipe created')
-        navigate(`/recipes/${recipe.id}`, { replace: true })
+        navigate(`/recipes/${result.id}`, { replace: true })
         return
       }
       navigate(-1)

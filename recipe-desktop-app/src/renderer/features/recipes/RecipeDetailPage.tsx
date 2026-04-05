@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn, formatImageUrl, formatTime } from '@/lib/utils'
 import { ROUTES } from '@/lib/constants'
-import { useRecipe, useToggleFavorite, useTogglePin, useDeleteRecipe } from '@/hooks/useRecipes'
+import { useRecipe, useTogglePin, useDeleteRecipe } from '@/hooks/useRecipes'
 import { useAddGroceriesFromRecipe } from '@/hooks/useGroceries'
 import { useAuth } from '@/hooks/useAuth'
 import { useCookingStore } from '@/stores/cookingStore'
@@ -30,7 +30,6 @@ export function RecipeDetailPage(): JSX.Element {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { data: recipe, isLoading } = useRecipe(id)
-  const toggleFavorite = useToggleFavorite()
   const togglePin = useTogglePin()
   const deleteRecipe = useDeleteRecipe()
   const addToGroceries = useAddGroceriesFromRecipe()
@@ -63,6 +62,8 @@ export function RecipeDetailPage(): JSX.Element {
   const imageUrl = formatImageUrl(recipe.imageUrl)
   const instructions = recipe.parsedInstructions || parseInstructions(recipe.instructions)
   const ingredients = recipe.parsedIngredients || parseIngredients(recipe.ingredients)
+  const isFavorited = (recipe.FavoriteRecipe?.length ?? 0) > 0
+  const isPinned = (recipe.PinnedRecipe?.length ?? 0) > 0
 
   const handleDelete = async (): Promise<void> => {
     if (!confirm('Are you sure you want to delete this recipe?')) return
@@ -110,36 +111,23 @@ export function RecipeDetailPage(): JSX.Element {
           </button>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() =>
-                toggleFavorite.mutate({
-                  recipeId: recipe.id,
-                  isFavorited: recipe.isFavorited || false
-                })
-              }
-            >
+            <span className="flex items-center">
               <Heart
                 size={18}
                 className={cn(
-                  recipe.isFavorited && 'fill-primary text-primary'
+                  'text-muted-foreground',
+                  isFavorited && 'fill-primary text-primary'
                 )}
               />
-            </Button>
+            </span>
             <Button
               variant="ghost"
               size="icon"
-              onClick={() =>
-                togglePin.mutate({
-                  recipeId: recipe.id,
-                  isPinned: recipe.isPinned || false
-                })
-              }
+              onClick={() => togglePin.mutate({ recipeId: recipe.id })}
             >
               <Pin
                 size={18}
-                className={cn(recipe.isPinned && 'fill-accent text-accent')}
+                className={cn(isPinned && 'fill-accent text-accent')}
               />
             </Button>
             <Button

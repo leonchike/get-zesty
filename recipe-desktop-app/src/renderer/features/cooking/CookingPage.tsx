@@ -85,7 +85,7 @@ export function CookingPage(): JSX.Element {
   const ingredients = useMemo(() => {
     if (!recipe) return []
     if (recipe.parsedIngredients) {
-      return recipe.parsedIngredients.map((i) => i.originalText || `${i.quantity || ''} ${i.unit || ''} ${i.ingredient}`.trim())
+      return recipe.parsedIngredients.map((i) => i.original_text || `${i.quantity || ''} ${i.unit || ''} ${i.ingredient}`.trim())
     }
     if (recipe.ingredients) {
       return recipe.ingredients.split('\n').map((l) => l.trim()).filter(Boolean)

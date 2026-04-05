@@ -28,7 +28,7 @@ export function Sidebar(): JSX.Element {
   return (
     <aside className="fixed left-0 top-0 bottom-0 z-40 flex w-56 flex-col glass border-r border-glass-border">
       {/* Drag region for traffic lights */}
-      <div className="drag-region h-[52px] flex items-end px-4 pb-2">
+      <div className="drag-region flex flex-col pt-[38px] px-4 pb-3">
         <span className="no-drag font-logo text-lg font-semibold text-primary tracking-wide">
           Zesty
         </span>
@@ -68,10 +68,10 @@ export function Sidebar(): JSX.Element {
             Pinned
           </div>
           <div className="space-y-0.5 mt-1">
-            {pinnedRecipes.slice(0, 5).map((pin) => (
+            {pinnedRecipes.slice(0, 5).map((recipe) => (
               <NavLink
-                key={pin.recipeId}
-                to={ROUTES.RECIPE(pin.recipeId)}
+                key={recipe.id}
+                to={ROUTES.RECIPE(recipe.id)}
                 className={({ isActive }) =>
                   cn(
                     'no-drag flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm transition-colors',
@@ -81,16 +81,16 @@ export function Sidebar(): JSX.Element {
                   )
                 }
               >
-                {pin.recipe.imageUrl ? (
+                {recipe.imageUrl ? (
                   <img
-                    src={formatImageUrl(pin.recipe.imageUrl, 'thumbnail') || ''}
+                    src={formatImageUrl(recipe.imageUrl, 'thumbnail') || ''}
                     alt=""
                     className="h-5 w-5 rounded object-cover flex-shrink-0"
                   />
                 ) : (
                   <div className="h-5 w-5 rounded bg-muted flex-shrink-0" />
                 )}
-                <span className="truncate">{truncate(pin.recipe.title, 22)}</span>
+                <span className="truncate">{truncate(recipe.title, 22)}</span>
               </NavLink>
             ))}
           </div>

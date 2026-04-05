@@ -30,7 +30,7 @@ export type RecipeDifficulty = 'EASY' | 'MEDIUM' | 'HARD'
 export type RecipeSource = 'USER' | 'SCRAPE' | 'GEN_AI'
 
 export interface ParsedIngredient {
-  originalText: string
+  original_text: string
   quantity: number | null
   unit: string | null
   ingredient: string
@@ -89,8 +89,8 @@ export interface Recipe {
   parsedInstructions: RecipeInstruction[] | null
   createdAt: string
   updatedAt: string
-  isFavorited?: boolean
-  isPinned?: boolean
+  FavoriteRecipe?: { id: string }[]
+  PinnedRecipe?: { id: string }[]
   user?: { name: string | null; image: string | null }
 }
 
@@ -108,10 +108,8 @@ export interface RecipeSearchFilters {
 
 export interface RecipeSearchResponse {
   recipes: Recipe[]
+  nextPage: number | null
   totalCount: number
-  page: number
-  pageSize: number
-  totalPages: number
 }
 
 export interface RecipeFormData {
@@ -207,14 +205,5 @@ export interface ChatMessage {
   content: string
 }
 
-// --- Pinned Recipe ---
-export interface PinnedRecipe {
-  id: string
-  recipeId: string
-  pinnedAt: string
-  recipe: {
-    id: string
-    title: string
-    imageUrl: string | null
-  }
-}
+// --- Pinned Recipe (GET /pinned-recipes returns Recipe[] directly) ---
+export type PinnedRecipeItem = Recipe
