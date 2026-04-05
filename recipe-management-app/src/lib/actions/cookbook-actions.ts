@@ -54,6 +54,7 @@ export async function listCookbooks(
       publisher: true,
       year: true,
       description: true,
+      coverUrl: true,
       recipeCount: true,
     },
   });
