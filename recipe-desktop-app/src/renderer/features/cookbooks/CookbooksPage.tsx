@@ -5,19 +5,14 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn, formatImageUrl } from '@/lib/utils'
 import { useCookbooks, useSearchCookbooks } from '@/hooks/useCookbooks'
-import { useAuth } from '@/hooks/useAuth'
 import { ROUTES } from '@/lib/constants'
 import { motion } from 'framer-motion'
 
 export function CookbooksPage(): JSX.Element {
   const navigate = useNavigate()
-  const { user } = useAuth()
   const { data: cookbooks, isLoading } = useCookbooks()
   const [searchQuery, setSearchQuery] = useState('')
-  const { data: searchResults, isLoading: isSearching } = useSearchCookbooks(
-    searchQuery,
-    user?.id
-  )
+  const { data: searchData, isLoading: isSearching } = useSearchCookbooks(searchQuery)
 
   return (
     <div className="p-6 space-y-6">
@@ -45,20 +40,25 @@ export function CookbooksPage(): JSX.Element {
           <h2 className="text-sm font-medium text-muted-foreground">
             {isSearching
               ? 'Searching...'
-              : `${searchResults?.length || 0} results for "${searchQuery}"`}
+              : `${searchData?.totalCount || 0} results for "${searchQuery}"`}
           </h2>
-          {searchResults?.map((recipe) => (
+          {searchData?.results.map((result) => (
             <motion.button
-              key={recipe.id}
+              key={result.recipe.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              onClick={() => navigate(`/cookbooks/${recipe.cookbookId}/recipes/${recipe.id}`)}
+              onClick={() => navigate(`/cookbooks/${result.recipe.cookbookId}/recipes/${result.recipe.id}`)}
               className="w-full text-left glass-elevated rounded-lg p-4 hover:shadow-warm transition-shadow"
             >
-              <h3 className="font-heading font-semibold">{recipe.title}</h3>
-              {recipe.description && (
+              <h3 className="font-heading font-semibold">{result.recipe.title}</h3>
+              {result.recipe.cookbook && (
+                <p className="text-xs text-muted-foreground">
+                  {result.recipe.cookbook.title}{result.recipe.cookbook.author ? ` — ${result.recipe.cookbook.author}` : ''}
+                </p>
+              )}
+              {result.recipe.description && (
                 <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                  {recipe.description}
+                  {result.recipe.description}
                 </p>
               )}
             </motion.button>

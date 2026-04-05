@@ -6,26 +6,24 @@ import type { Cookbook, CookbookRecipe } from '@/types'
 import { useAuth } from './useAuth'
 
 export function useCookbooks() {
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated } = useAuth()
 
   return useQuery<Cookbook[]>({
     queryKey: [QUERY_KEYS.COOKBOOKS],
     queryFn: async () => {
-      const { data } = await api.get(ENDPOINTS.COOKBOOKS, {
-        params: { user_id: user?.id }
-      })
+      const { data } = await api.get(ENDPOINTS.COOKBOOKS)
       return data
     },
-    enabled: isAuthenticated && !!user,
+    enabled: isAuthenticated,
     staleTime: 60_000
   })
 }
 
 export function useCookbookRecipes(cookbookId: string | undefined) {
-  return useQuery<CookbookRecipe[]>({
+  return useQuery<{ recipes: CookbookRecipe[]; totalCount: number; nextPage: number | null }>({
     queryKey: [QUERY_KEYS.COOKBOOK_RECIPES, cookbookId],
     queryFn: async () => {
-      const { data } = await api.get(ENDPOINTS.COOKBOOK_RECIPES_LIST, {
+      const { data } = await api.get(ENDPOINTS.COOKBOOK_RECIPES, {
         params: { cookbook_id: cookbookId }
       })
       return data
@@ -35,30 +33,36 @@ export function useCookbookRecipes(cookbookId: string | undefined) {
   })
 }
 
-export function useCookbookRecipe(cookbookId: string | undefined, recipeId: string | undefined) {
+export function useCookbookRecipe(recipeId: string | undefined) {
   return useQuery<CookbookRecipe>({
-    queryKey: [QUERY_KEYS.COOKBOOK_RECIPE, cookbookId, recipeId],
+    queryKey: [QUERY_KEYS.COOKBOOK_RECIPE, recipeId],
     queryFn: async () => {
-      const { data } = await api.get(ENDPOINTS.COOKBOOK_RECIPE, {
-        params: { cookbook_id: cookbookId, recipe_id: recipeId }
+      const { data } = await api.get(ENDPOINTS.COOKBOOK_RECIPES, {
+        params: { recipe_id: recipeId }
       })
       return data
     },
-    enabled: !!cookbookId && !!recipeId,
+    enabled: !!recipeId,
     staleTime: 60_000
   })
 }
 
-export function useSearchCookbooks(query: string, userId: string | undefined) {
-  return useQuery<CookbookRecipe[]>({
+interface SearchResult {
+  recipe: CookbookRecipe & { cookbook: { title: string; author: string | null } }
+  score: number
+  matchType: 'hybrid' | 'semantic' | 'fulltext'
+}
+
+export function useSearchCookbooks(query: string) {
+  const { isAuthenticated } = useAuth()
+
+  return useQuery<{ results: SearchResult[]; totalCount: number }>({
     queryKey: [QUERY_KEYS.COOKBOOK_RECIPES, 'search', query],
     queryFn: async () => {
-      const { data } = await api.get(ENDPOINTS.COOKBOOK_SEARCH, {
-        params: { query, user_id: userId }
-      })
+      const { data } = await api.post(ENDPOINTS.COOKBOOK_SEARCH, { query })
       return data
     },
-    enabled: query.length > 2 && !!userId,
+    enabled: query.length > 2 && isAuthenticated,
     staleTime: 30_000
   })
 }

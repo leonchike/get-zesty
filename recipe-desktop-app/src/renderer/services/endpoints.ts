@@ -37,10 +37,8 @@ export const ENDPOINTS = {
   GROCERY_SECTIONS: '/api/grocery-sections',
   ADD_GROCERIES_FROM_RECIPE: '/api/mobile/add-groceries-from-recipe',
 
-  // Cookbooks
-  COOKBOOKS: '/api/mcp/cookbooks',
-  COOKBOOK_SEARCH: '/api/mcp/cookbooks/search',
-  COOKBOOK_RECIPES_LIST: '/api/mcp/cookbooks/recipes/list',
-  COOKBOOK_RECIPE: '/api/mcp/cookbooks/recipes',
-  COOKBOOK_INGREDIENTS_SEARCH: '/api/mcp/cookbooks/ingredients'
+  // Cookbooks (mobile JWT-authenticated endpoints)
+  COOKBOOKS: '/api/mobile/cookbooks',
+  COOKBOOK_RECIPES: '/api/mobile/cookbook-recipes',
+  COOKBOOK_SEARCH: '/api/mobile/cookbook-search'
 } as const

@@ -8,9 +8,10 @@ import { useState } from 'react'
 export function CookbookDetailPage(): JSX.Element {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { data: recipes, isLoading } = useCookbookRecipes(id)
+  const { data: recipesData, isLoading } = useCookbookRecipes(id)
+  const recipes = recipesData?.recipes
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null)
-  const { data: selectedRecipe } = useCookbookRecipe(id, selectedRecipeId || undefined)
+  const { data: selectedRecipe } = useCookbookRecipe(selectedRecipeId || undefined)
 
   return (
     <div className="flex h-full">
@@ -25,8 +26,8 @@ export function CookbookDetailPage(): JSX.Element {
             Cookbooks
           </button>
           <h2 className="font-heading text-lg font-bold">Recipes</h2>
-          {recipes && (
-            <p className="text-xs text-muted-foreground mt-1">{recipes.length} recipes</p>
+          {recipesData && (
+            <p className="text-xs text-muted-foreground mt-1">{recipesData.totalCount} recipes</p>
           )}
         </div>
 
