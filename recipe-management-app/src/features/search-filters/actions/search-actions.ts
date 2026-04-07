@@ -116,12 +116,15 @@ export async function fetchRecipes(
       AND: andConditions,
     };
 
-    const [recipes, totalCount] = await prisma.$transaction([
+    // Fetch extra when searching to allow re-ranking by relevance
+    const fetchLimit = search?.trim() ? Math.max(limit, 50) : limit;
+
+    const [fetchedRecipes, totalCount] = await prisma.$transaction([
       prisma.recipe.findMany({
         where: whereClause,
         orderBy: { updatedAt: "desc" },
         skip: offset,
-        take: limit,
+        take: fetchLimit,
         include: {
           FavoriteRecipe: true,
           PinnedRecipe: true,
@@ -129,6 +132,21 @@ export async function fetchRecipes(
       }),
       prisma.recipe.count({ where: whereClause }),
     ]);
+
+    // Re-rank: title matches first, then description, then other fields
+    let recipes = fetchedRecipes;
+    if (search?.trim()) {
+      const s = search.toLowerCase();
+      recipes = [...fetchedRecipes].sort((a, b) => {
+        const aTitle = a.title?.toLowerCase().includes(s) ? 0 : 1;
+        const bTitle = b.title?.toLowerCase().includes(s) ? 0 : 1;
+        if (aTitle !== bTitle) return aTitle - bTitle;
+        const aDesc = a.description?.toLowerCase().includes(s) ? 0 : 1;
+        const bDesc = b.description?.toLowerCase().includes(s) ? 0 : 1;
+        return aDesc - bDesc;
+      });
+      recipes = recipes.slice(0, limit);
+    }
 
     const nextPage = offset + limit < totalCount ? page + 1 : null;
 

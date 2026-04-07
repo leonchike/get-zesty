@@ -191,6 +191,7 @@ export interface CookbookRecipe {
   imageUrl: string | null
   createdAt: string
   updatedAt: string
+  cookbook?: { title: string; author: string | null }
 }
 
 // --- Filter Options ---

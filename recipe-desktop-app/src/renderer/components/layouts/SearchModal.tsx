@@ -13,6 +13,8 @@ interface SearchModalProps {
 export function SearchModal({ isOpen, onClose }: SearchModalProps): JSX.Element | null {
   const [query, setQuery] = useState('')
   const [highlightIndex, setHighlightIndex] = useState(-1)
+  const [showAllRecipes, setShowAllRecipes] = useState(false)
+  const [showAllCookbook, setShowAllCookbook] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
 

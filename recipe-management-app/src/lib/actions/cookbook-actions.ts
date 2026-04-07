@@ -281,7 +281,9 @@ export async function quickSearchCookbookRecipes(
   query: string,
   limit: number = 5
 ) {
-  const recipes = await prisma.cookbookRecipe.findMany({
+  // Fetch up to 50 results, then re-rank by relevance (title > description > ingredients)
+  const fetchLimit = Math.max(limit, 50);
+  const raw = await prisma.cookbookRecipe.findMany({
     where: {
       userId,
       OR: [
@@ -291,7 +293,7 @@ export async function quickSearchCookbookRecipes(
       ],
     },
     orderBy: { title: "asc" },
-    take: limit,
+    take: fetchLimit,
     select: {
       id: true,
       title: true,
@@ -305,7 +307,19 @@ export async function quickSearchCookbookRecipes(
     },
   });
 
-  return { recipes, totalCount: recipes.length };
+  // Re-rank: title matches first, then description, then ingredient-only
+  const q = query.toLowerCase();
+  const ranked = raw.sort((a, b) => {
+    const aTitle = a.title?.toLowerCase().includes(q) ? 0 : 1;
+    const bTitle = b.title?.toLowerCase().includes(q) ? 0 : 1;
+    if (aTitle !== bTitle) return aTitle - bTitle;
+    const aDesc = a.description?.toLowerCase().includes(q) ? 0 : 1;
+    const bDesc = b.description?.toLowerCase().includes(q) ? 0 : 1;
+    return aDesc - bDesc;
+  });
+
+  const recipes = ranked.slice(0, limit);
+  return { recipes, totalCount: raw.length };
 }
 
 /**

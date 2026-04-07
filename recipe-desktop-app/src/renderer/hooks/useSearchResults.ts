@@ -36,7 +36,7 @@ export function useSearchResults(query: string) {
     queryFn: async () => {
       const { data } = await api.post(ENDPOINTS.RECIPE_SEARCH, {
         search: debouncedQuery,
-        limit: 5,
+        limit: 100,
         page: 1
       })
       return data as { recipes: Array<{ id: string; title: string; cuisineType?: string; imageUrl?: string }>; totalCount: number }
@@ -51,7 +51,7 @@ export function useSearchResults(query: string) {
     queryFn: async () => {
       const { data } = await api.post(ENDPOINTS.COOKBOOK_QUICK_SEARCH, {
         query: debouncedQuery,
-        limit: 5
+        limit: 100
       })
       return data as {
         recipes: Array<{
