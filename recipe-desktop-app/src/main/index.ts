@@ -61,6 +61,7 @@ function createWindow(): void {
     height: 820,
     minWidth: 900,
     minHeight: 600,
+    icon: join(__dirname, '../../resources/icon-macos.png'),
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 16, y: 18 },
     vibrancy: 'sidebar',
@@ -169,6 +170,11 @@ ipcMain.handle('window:close', () => mainWindow?.close())
 // --- App Lifecycle ---
 
 app.whenReady().then(() => {
+  // Set dock icon on macOS
+  if (process.platform === 'darwin' && app.dock) {
+    app.dock.setIcon(join(__dirname, '../../resources/icon-macos.png'))
+  }
+
   Menu.setApplicationMenu(buildMenu())
   createWindow()
 

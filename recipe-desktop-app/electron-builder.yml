@@ -1,0 +1,24 @@
+appId: com.getzesty.desktop
+productName: Get Zesty
+copyright: Copyright © 2026 Get Zesty
+
+directories:
+  buildResources: resources
+  output: dist
+
+files:
+  - out/**/*
+  - resources/**/*
+
+mac:
+  icon: resources/icon.icns
+  category: public.app-category.food-and-drink
+  target:
+    - target: dmg
+      arch:
+        - universal
+  artifactName: "${productName}-${version}-${arch}.${ext}"
+
+dmg:
+  title: Get Zesty
+  artifactName: "${productName}-${version}.${ext}"

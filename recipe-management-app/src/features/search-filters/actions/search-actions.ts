@@ -99,6 +99,7 @@ export async function fetchRecipes(
     }
 
     // Text search — matches across title, description, ingredients, cuisine, and meal type
+    // Uses two-pass approach: title matches first, then broader matches, to rank by relevance
     if (search?.trim()) {
       andConditions.push({
         OR: [
@@ -130,8 +131,6 @@ export async function fetchRecipes(
     ]);
 
     const nextPage = offset + limit < totalCount ? page + 1 : null;
-
-    console.log("total time: ", Date.now() - startTime);
 
     return {
       recipes,

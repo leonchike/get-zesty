@@ -29,11 +29,7 @@ export function Sidebar(): JSX.Element {
   return (
     <aside className="fixed left-0 top-0 bottom-0 z-40 flex w-56 flex-col glass border-r border-glass-border">
       {/* Drag region for traffic lights */}
-      <div className="drag-region flex flex-col pt-[38px] px-4 pb-3">
-        <span className="no-drag font-logo text-lg font-semibold text-primary tracking-wide">
-          Zesty
-        </span>
-      </div>
+      <div className="drag-region h-[52px] flex-shrink-0" />
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto scrollbar-thin px-3 py-2 space-y-1">

@@ -3,15 +3,22 @@ import { ArrowLeft, BookOpen } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCookbookRecipes, useCookbookRecipe } from '@/hooks/useCookbooks'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export function CookbookDetailPage(): JSX.Element {
-  const { id } = useParams<{ id: string }>()
+  const { id, recipeId: recipeIdParam } = useParams<{ id: string; recipeId: string }>()
   const navigate = useNavigate()
   const { data: recipesData, isLoading } = useCookbookRecipes(id)
   const recipes = recipesData?.recipes
-  const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null)
+  const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(recipeIdParam || null)
   const { data: selectedRecipe } = useCookbookRecipe(selectedRecipeId || undefined)
+
+  // Sync URL param on mount/change
+  useEffect(() => {
+    if (recipeIdParam) {
+      setSelectedRecipeId(recipeIdParam)
+    }
+  }, [recipeIdParam])
 
   return (
     <div className="flex h-full">
