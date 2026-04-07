@@ -273,6 +273,42 @@ export async function clearCookbookData(
 }
 
 /**
+ * Quick text search across cookbook recipes (no embeddings needed).
+ * Searches title and ingredients with case-insensitive contains.
+ */
+export async function quickSearchCookbookRecipes(
+  userId: string,
+  query: string,
+  limit: number = 5
+) {
+  const recipes = await prisma.cookbookRecipe.findMany({
+    where: {
+      userId,
+      OR: [
+        { title: { contains: query, mode: "insensitive" } },
+        { ingredients: { contains: query, mode: "insensitive" } },
+        { description: { contains: query, mode: "insensitive" } },
+      ],
+    },
+    orderBy: { title: "asc" },
+    take: limit,
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      cookbookId: true,
+      cuisineType: true,
+      imageUrl: true,
+      cookbook: {
+        select: { title: true, author: true, coverUrl: true },
+      },
+    },
+  });
+
+  return { recipes, totalCount: recipes.length };
+}
+
+/**
  * List all recipes in a cookbook with pagination
  */
 export async function listCookbookRecipes(

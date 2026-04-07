@@ -12,6 +12,7 @@ import { ROUTES } from '@/lib/constants'
 import { useAuth } from '@/hooks/useAuth'
 import { usePinnedRecipes } from '@/hooks/usePinnedRecipes'
 import { formatImageUrl, truncate } from '@/lib/utils'
+import { SidebarTimers } from '@/features/cooking/SidebarTimers'
 
 const NAV_ITEMS = [
   { label: 'All Recipes', icon: ChefHat, path: ROUTES.HOME },
@@ -96,6 +97,9 @@ export function Sidebar(): JSX.Element {
           </div>
         </div>
       )}
+
+      {/* Active timers */}
+      <SidebarTimers />
 
       {/* Settings */}
       {isAuthenticated && (

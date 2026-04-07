@@ -1,36 +1,30 @@
-import { useRef, useEffect, useCallback } from 'react'
-import { Search, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { useFilterStore } from '@/stores/filterStore'
+import { useEffect, useState, useCallback } from 'react'
+import { Search } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { SearchModal } from './SearchModal'
 
 export function Toolbar(): JSX.Element {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const { search, setSearch } = useFilterStore()
   const { user } = useAuth()
+  const [searchOpen, setSearchOpen] = useState(false)
 
-  // Listen for Cmd+F from main process
-  const focusSearch = useCallback(() => {
-    inputRef.current?.focus()
-    inputRef.current?.select()
-  }, [])
+  // Cmd+F opens search modal
+  const openSearch = useCallback(() => setSearchOpen(true), [])
 
   useEffect(() => {
-    const unsub = window.api.onFocusSearch(focusSearch)
+    const unsub = window.api.onFocusSearch(openSearch)
     return unsub
-  }, [focusSearch])
+  }, [openSearch])
 
-  // Also handle Cmd+F locally
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'f' || e.key === 'k')) {
         e.preventDefault()
-        focusSearch()
+        openSearch()
       }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [focusSearch])
+  }, [openSearch])
 
   return (
     <header className="sticky top-0 z-30 glass border-b border-glass-border">
@@ -38,34 +32,17 @@ export function Toolbar(): JSX.Element {
       <div className="h-0.5 accent-gradient" />
 
       <div className="flex items-center gap-4 px-6 py-3">
-        {/* Search */}
-        <div className="relative flex-1 max-w-md">
-          <Search
-            size={16}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-          />
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder="Search recipes..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className={cn(
-              'w-full rounded-lg border border-border bg-input/50 py-2 pl-9 pr-9 text-sm',
-              'placeholder:text-muted-foreground',
-              'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1',
-              'transition-all'
-            )}
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
+        {/* Search trigger button */}
+        <button
+          onClick={openSearch}
+          className="flex-1 max-w-md flex items-center gap-3 px-4 py-2 rounded-lg border border-border bg-input/30 hover:border-primary/30 transition-all text-sm text-muted-foreground group"
+        >
+          <Search size={15} className="opacity-50 group-hover:opacity-70 flex-shrink-0" />
+          <span className="flex-1 text-left">Search recipes & cookbooks...</span>
+          <kbd className="hidden md:inline-flex h-5 items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+            <span className="text-xs">⌘</span>F
+          </kbd>
+        </button>
 
         {/* Spacer */}
         <div className="flex-1" />
@@ -81,6 +58,9 @@ export function Toolbar(): JSX.Element {
             </div>
           </div>
         )}
+
+        {/* Search modal */}
+        <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
       </div>
     </header>
   )

@@ -40,5 +40,6 @@ export const ENDPOINTS = {
   // Cookbooks (mobile JWT-authenticated endpoints)
   COOKBOOKS: '/api/mobile/cookbooks',
   COOKBOOK_RECIPES: '/api/mobile/cookbook-recipes',
-  COOKBOOK_SEARCH: '/api/mobile/cookbook-search'
+  COOKBOOK_SEARCH: '/api/mobile/cookbook-search',
+  COOKBOOK_QUICK_SEARCH: '/api/mobile/cookbook-quick-search'
 } as const

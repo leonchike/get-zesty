@@ -98,12 +98,15 @@ export async function fetchRecipes(
       andConditions.push({ mealType: { in: filteredMealTypes } });
     }
 
-    // Text search
+    // Text search — matches across title, description, ingredients, cuisine, and meal type
     if (search?.trim()) {
       andConditions.push({
         OR: [
           { title: { contains: search, mode: "insensitive" } },
           { description: { contains: search, mode: "insensitive" } },
+          { ingredients: { contains: search, mode: "insensitive" } },
+          { cuisineType: { contains: search, mode: "insensitive" } },
+          { mealType: { contains: search, mode: "insensitive" } },
         ],
       });
     }

@@ -15,6 +15,7 @@ import { CookbooksPage } from '@/features/cookbooks/CookbooksPage'
 import { CookbookDetailPage } from '@/features/cookbooks/CookbookDetailPage'
 import { CookingPage } from '@/features/cooking/CookingPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
+import { TimerTickProvider } from '@/hooks/useTimerTick'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,6 +39,9 @@ export default function App(): JSX.Element {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
 
+                {/* Full-screen immersive route (no shell) */}
+                <Route path="/cooking/:id" element={<CookingPage />} />
+
                 {/* Protected routes inside AppShell */}
                 <Route element={<AppShell />}>
                   <Route path="/" element={<HomePage />} />
@@ -48,11 +52,11 @@ export default function App(): JSX.Element {
                   <Route path="/cookbooks" element={<CookbooksPage />} />
                   <Route path="/cookbooks/:id" element={<CookbookDetailPage />} />
                   <Route path="/cookbooks/:id/recipes/:recipeId" element={<CookbookDetailPage />} />
-                  <Route path="/cooking/:id" element={<CookingPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                 </Route>
               </Routes>
             </HashRouter>
+            <TimerTickProvider />
             <Toaster position="bottom-right" richColors />
           </AuthProvider>
         </ThemeProvider>

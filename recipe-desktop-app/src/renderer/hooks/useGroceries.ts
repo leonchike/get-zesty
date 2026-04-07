@@ -82,15 +82,22 @@ export function useDeleteGroceryItem() {
   })
 }
 
+export interface GroceryIngredientInput {
+  name: string
+  quantity: number | null
+  quantityUnit: string | null
+  recipeId: string | null
+}
+
 export function useAddGroceriesFromRecipe() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (recipeId: string) => {
+    mutationFn: async (selectedIngredients: GroceryIngredientInput[]) => {
       const { data } = await api.post(ENDPOINTS.ADD_GROCERIES_FROM_RECIPE, {
-        data: { recipeId }
+        selectedIngredients
       })
-      return data
+      return data as { success: boolean; count?: number; error?: string }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.GROCERIES] })

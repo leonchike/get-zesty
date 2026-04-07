@@ -1,26 +1,33 @@
-import { useEffect, useMemo, useState, useRef } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft,
   ChevronLeft,
   ChevronRight,
   X,
   List,
-  Timer,
-  Play,
-  Pause,
-  RotateCcw
+  CheckCircle2
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useRecipe } from '@/hooks/useRecipes'
+import { useAuth } from '@/hooks/useAuth'
 import { useCookingStore } from '@/stores/cookingStore'
+import { useRecipeDisplayStore } from '@/stores/recipeDisplayStore'
+import { formatScaledQuantity } from '@/lib/fractions'
 import { PageLoader } from '@/components/ui/loader'
+import { useTimerTick } from '@/hooks/useTimerTick'
+import { ParsedInstructionText } from './ParsedInstructionText'
+import { ActiveTimersBar } from './ActiveTimersBar'
+import type { ParsedIngredient } from '@/types'
+
+// Warm off-white used throughout cooking mode
+const TEXT = '#EDE8E2'
 
 export function CookingPage(): JSX.Element {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { isAuthenticated, isLoading: authLoading } = useAuth()
   const { data: recipe, isLoading } = useRecipe(id)
   const {
     isActive,
@@ -35,11 +42,18 @@ export function CookingPage(): JSX.Element {
     startCooking
   } = useCookingStore()
 
-  // Timer state
-  const [timerSeconds, setTimerSeconds] = useState(0)
-  const [timerRunning, setTimerRunning] = useState(false)
-  const [showTimer, setShowTimer] = useState(false)
-  const timerRef = useRef<ReturnType<typeof setInterval>>()
+  const [showCelebration, setShowCelebration] = useState(false)
+  const [slideDirection, setSlideDirection] = useState(1) // 1 = forward, -1 = backward
+
+  // Enable inline timer ticking in cooking view
+  useTimerTick()
+
+  // Redirect if not authed
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate('/login', { replace: true })
+    }
+  }, [authLoading, isAuthenticated, navigate])
 
   // Power save blocker
   useEffect(() => {
@@ -49,49 +63,55 @@ export function CookingPage(): JSX.Element {
     }
   }, [])
 
-  // Timer tick
-  useEffect(() => {
-    if (timerRunning && timerSeconds > 0) {
-      timerRef.current = setInterval(() => {
-        setTimerSeconds((s) => {
-          if (s <= 1) {
-            setTimerRunning(false)
-            // Simple notification
-            new Notification('Timer Done!', { body: 'Your cooking timer has finished.' })
-            return 0
-          }
-          return s - 1
-        })
-      }, 1000)
-      return () => clearInterval(timerRef.current)
-    }
-    return () => clearInterval(timerRef.current)
-  }, [timerRunning, timerSeconds])
-
   const instructions = useMemo(() => {
-    if (!recipe) return []
-    if (recipe.parsedInstructions) {
-      return recipe.parsedInstructions.map((i) => i.text)
-    }
-    if (recipe.instructions) {
-      return recipe.instructions
-        .split('\n')
-        .map((l) => l.trim().replace(/^\d+[\.\)]\s*/, ''))
-        .filter(Boolean)
-    }
-    return []
+    if (!recipe?.instructions) return []
+    return recipe.instructions
+      .split('\n')
+      .map((l) => l.trim().replace(/^\d+[\.\)]\s*/, ''))
+      .filter(Boolean)
   }, [recipe])
 
-  const ingredients = useMemo(() => {
-    if (!recipe) return []
-    if (recipe.parsedIngredients) {
-      return recipe.parsedIngredients.map((i) => i.original_text || `${i.quantity || ''} ${i.unit || ''} ${i.ingredient}`.trim())
+  const scale = useRecipeDisplayStore((s) => s.getRecipeScale(recipe?.id ?? ''))
+
+  // Build scaled ingredient display strings
+  const { allIngredients, parsedIngredientNames } = useMemo(() => {
+    if (!recipe) return { allIngredients: [] as string[], parsedIngredientNames: [] as string[] }
+
+    // Try parsed ingredients for scaled display
+    const parsed = safeParsedIngredients(recipe.parsedIngredients)
+    if (parsed && parsed.length > 0) {
+      const display = parsed.map((ing) => {
+        const qty = formatScaledQuantity(ing.quantity, scale)
+        return [qty, ing.unit, ing.ingredient].filter(Boolean).join(' ')
+      })
+      const names = parsed.map((ing) => ing.ingredient)
+      return { allIngredients: display, parsedIngredientNames: names }
     }
+
+    // Fall back to raw text (no scaling possible)
     if (recipe.ingredients) {
-      return recipe.ingredients.split('\n').map((l) => l.trim()).filter(Boolean)
+      const lines = recipe.ingredients.split('\n').map((l) => l.trim()).filter(Boolean)
+      return { allIngredients: lines, parsedIngredientNames: lines }
     }
-    return []
-  }, [recipe])
+    return { allIngredients: [] as string[], parsedIngredientNames: [] as string[] }
+  }, [recipe, scale])
+
+  // Smart ingredient-to-step assignment
+  const stepIngredients = useMemo(() => {
+    if (allIngredients.length === 0 || instructions.length === 0) return []
+    if (instructions.length === 1) return allIngredients
+
+    const stepText = instructions[currentStep]?.toLowerCase() || ''
+    return allIngredients.filter((_, i) => {
+      const name = parsedIngredientNames[i] || ''
+      const words = name
+        .toLowerCase()
+        .replace(/[^a-z\s]/g, '')
+        .split(/\s+/)
+        .filter((w) => w.length >= 3)
+      return words.some((word) => stepText.includes(word))
+    })
+  }, [allIngredients, parsedIngredientNames, instructions, currentStep])
 
   // Auto-start if not active
   useEffect(() => {
@@ -100,62 +120,128 @@ export function CookingPage(): JSX.Element {
     }
   }, [recipe, isActive, instructions.length, startCooking])
 
-  const handleExit = (): void => {
+  const handleExit = useCallback((): void => {
     stopCooking()
     navigate(`/recipes/${id}`)
-  }
+  }, [stopCooking, navigate, id])
+
+  const handleNext = useCallback((): void => {
+    if (currentStep === totalSteps - 1) {
+      // Show celebration
+      setShowCelebration(true)
+      setTimeout(() => {
+        handleExit()
+      }, 2500)
+    } else {
+      setSlideDirection(1)
+      nextStep()
+    }
+  }, [currentStep, totalSteps, nextStep, handleExit])
+
+  const handlePrev = useCallback((): void => {
+    setSlideDirection(-1)
+    prevStep()
+  }, [prevStep])
+
+  const handleSetStep = useCallback(
+    (step: number): void => {
+      setSlideDirection(step > currentStep ? 1 : -1)
+      setStep(step)
+    },
+    [currentStep, setStep]
+  )
 
   // Keyboard navigation
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
         e.preventDefault()
-        nextStep()
+        handleNext()
       } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
         e.preventDefault()
-        prevStep()
+        handlePrev()
       } else if (e.key === 'Escape') {
         handleExit()
       }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [nextStep, prevStep])
+  }, [handleNext, handlePrev, handleExit])
 
-  if (isLoading) return <PageLoader />
+  if (authLoading || isLoading) {
+    return (
+      <div className="h-screen bg-[hsl(var(--cooking-bg))] flex items-center justify-center">
+        <PageLoader />
+      </div>
+    )
+  }
   if (!recipe || instructions.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <p className="text-muted-foreground">No instructions available.</p>
+      <div className="h-screen bg-[hsl(var(--cooking-bg))] flex flex-col items-center justify-center" style={{ color: `${TEXT}99` }}>
+        <p>No instructions available.</p>
+        <Button variant="ghost" className="mt-4" style={{ color: `${TEXT}99` }} onClick={() => navigate(-1)}>
+          Go back
+        </Button>
       </div>
     )
   }
 
-  const formatTimer = (secs: number): string => {
-    const m = Math.floor(secs / 60)
-    const s = secs % 60
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+  const progress = ((currentStep + 1) / instructions.length) * 100
+
+  // Celebration overlay
+  if (showCelebration) {
+    return (
+      <div className="h-screen bg-[hsl(var(--cooking-bg))] flex items-center justify-center">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="text-center"
+        >
+          <span className="text-7xl block mb-6">🎉</span>
+          <h1 className="font-heading text-4xl font-bold" style={{ color: TEXT }}>
+            Well done!
+          </h1>
+          <p className="mt-3 text-lg" style={{ color: `${TEXT}80` }}>
+            Enjoy your meal
+          </p>
+        </motion.div>
+      </div>
+    )
   }
 
   return (
-    <div className="flex h-full bg-[hsl(var(--cooking-bg))] text-white overflow-hidden">
-      {/* Ingredients sidebar */}
+    <div className="flex h-screen bg-[hsl(var(--cooking-bg))] overflow-hidden">
+      {/* All ingredients sidebar */}
       <AnimatePresence>
         {showIngredients && (
           <motion.aside
             initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 280, opacity: 1 }}
+            animate={{ width: 300, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
-            className="border-r border-white/10 overflow-y-auto scrollbar-thin flex-shrink-0"
+            transition={{ duration: 0.2 }}
+            className="flex-shrink-0 overflow-y-auto scrollbar-thin"
+            style={{ borderRight: `1px solid ${TEXT}15` }}
           >
-            <div className="p-4">
-              <h3 className="text-sm font-medium text-white/60 uppercase tracking-wider mb-3">
-                Ingredients
+            {/* Spacer for traffic lights */}
+            <div className="h-[38px]" />
+            <div className="p-5">
+              <h3
+                className="text-xs font-semibold uppercase tracking-widest mb-4"
+                style={{ color: `${TEXT}50` }}
+              >
+                All Ingredients
               </h3>
-              <ul className="space-y-2">
-                {ingredients.map((ing, i) => (
-                  <li key={i} className="text-sm text-white/80 flex items-start gap-2">
-                    <span className="mt-1.5 h-1 w-1 rounded-full bg-white/40 flex-shrink-0" />
+              <ul className="space-y-3">
+                {allIngredients.map((ing, i) => (
+                  <li
+                    key={i}
+                    className="text-sm flex items-start gap-2.5"
+                    style={{ color: `${TEXT}CC` }}
+                  >
+                    <span
+                      className="mt-1.5 h-1.5 w-1.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: `${TEXT}40` }}
+                    />
                     {ing}
                   </li>
                 ))}
@@ -165,145 +251,199 @@ export function CookingPage(): JSX.Element {
         )}
       </AnimatePresence>
 
-      {/* Main cooking area */}
-      <div className="flex-1 flex flex-col">
+      {/* Main content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Drag region for traffic lights */}
+        <div className="drag-region h-[38px] flex-shrink-0" />
+
         {/* Top bar */}
-        <div className="flex items-center justify-between px-6 py-4">
+        <div className="flex items-center justify-between px-6 pb-3 flex-shrink-0">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
               onClick={handleExit}
-              className="text-white/60 hover:text-white hover:bg-white/10"
+              className="no-drag h-9 w-9"
+              style={{ color: `${TEXT}99` }}
             >
-              <X size={20} />
+              <X size={18} />
             </Button>
-            <h2 className="font-heading text-lg font-semibold text-white/90 truncate max-w-xs">
+            <h2
+              className="font-heading text-base font-semibold truncate max-w-md"
+              style={{ color: `${TEXT}BB` }}
+            >
               {recipe.title}
             </h2>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="sm"
               onClick={toggleIngredients}
-              className={cn(
-                'text-white/60 hover:text-white hover:bg-white/10 gap-2',
-                showIngredients && 'bg-white/10 text-white'
-              )}
+              className={cn('no-drag gap-2 text-xs', showIngredients && 'bg-white/10')}
+              style={{ color: `${TEXT}99` }}
             >
-              <List size={16} />
+              <List size={14} />
               Ingredients
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowTimer(!showTimer)}
-              className={cn(
-                'text-white/60 hover:text-white hover:bg-white/10 gap-2',
-                showTimer && 'bg-white/10 text-white'
-              )}
-            >
-              <Timer size={16} />
-              Timer
             </Button>
           </div>
         </div>
 
-        {/* Step content */}
-        <div className="flex-1 flex items-center justify-center px-12">
-          <AnimatePresence mode="wait">
+        {/* Active timers bar */}
+        <ActiveTimersBar />
+
+        {/* Step content — fills remaining space */}
+        <div className="flex-1 flex flex-col items-center justify-center px-12 relative overflow-hidden">
+          {/* Decorative step number (background) */}
+          <span
+            className="absolute font-heading font-bold select-none pointer-events-none"
+            style={{
+              fontSize: '12rem',
+              color: `${TEXT}05`,
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -60%)'
+            }}
+          >
+            {currentStep + 1}
+          </span>
+
+          <AnimatePresence mode="wait" custom={slideDirection}>
             <motion.div
               key={currentStep}
-              initial={{ opacity: 0, x: 20 }}
+              custom={slideDirection}
+              initial={{ opacity: 0, x: slideDirection * 80 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-              className="max-w-xl text-center"
+              exit={{ opacity: 0, x: slideDirection * -80 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              className="max-w-2xl text-center relative z-10"
             >
-              <span className="text-5xl font-heading font-bold text-primary mb-6 block">
-                {currentStep + 1}
-              </span>
-              <p className="text-xl leading-relaxed text-white/90">
-                {instructions[currentStep]}
+              {/* Step label */}
+              <p
+                className="text-sm uppercase tracking-widest mb-6"
+                style={{ color: `${TEXT}50` }}
+              >
+                Step {currentStep + 1} of {instructions.length}
               </p>
+
+              {/* Instruction text — large and readable, with inline timer pills */}
+              <p className="text-3xl lg:text-4xl leading-relaxed font-body min-h-[120px]">
+                <ParsedInstructionText
+                  text={instructions[currentStep]}
+                  recipeId={recipe.id}
+                  recipeName={recipe.title}
+                  stepIndex={currentStep}
+                />
+              </p>
+
+              {/* Ingredients for this step */}
+              {stepIngredients.length > 0 && (
+                <div
+                  className="mt-8 pt-6"
+                  style={{ borderTop: `1px solid ${TEXT}15` }}
+                >
+                  <p
+                    className="text-xs uppercase tracking-widest mb-3"
+                    style={{ color: `${TEXT}50` }}
+                  >
+                    Ingredients for this step
+                  </p>
+                  <p className="text-lg leading-relaxed" style={{ color: `${TEXT}DD` }}>
+                    {stepIngredients.join(' · ')}
+                  </p>
+                </div>
+              )}
             </motion.div>
           </AnimatePresence>
         </div>
 
-        {/* Timer panel */}
-        {showTimer && (
-          <div className="flex items-center justify-center gap-4 py-4">
-            <div className="flex items-center gap-3 bg-white/5 rounded-lg px-4 py-2">
-              <input
-                type="number"
-                min={0}
-                placeholder="min"
-                className="w-16 bg-transparent text-center text-white text-lg focus:outline-none"
-                onChange={(e) => setTimerSeconds(Number(e.target.value) * 60)}
-                disabled={timerRunning}
-              />
-              <span className="text-2xl font-mono text-white/80">{formatTimer(timerSeconds)}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setTimerRunning(!timerRunning)}
-                className="text-white/60 hover:text-white hover:bg-white/10"
-                disabled={timerSeconds === 0 && !timerRunning}
-              >
-                {timerRunning ? <Pause size={16} /> : <Play size={16} />}
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  setTimerRunning(false)
-                  setTimerSeconds(0)
-                }}
-                className="text-white/60 hover:text-white hover:bg-white/10"
-              >
-                <RotateCcw size={14} />
-              </Button>
-            </div>
+        {/* Footer: progress bar + navigation */}
+        <div className="flex-shrink-0">
+          {/* Progress bar */}
+          <div className="relative h-1.5 w-full">
+            <div
+              className="absolute inset-0 rounded-none transition-all duration-300"
+              style={{
+                width: `${progress}%`,
+                background: 'linear-gradient(90deg, hsl(var(--primary)), hsl(var(--success)))'
+              }}
+            />
+            {/* Glow effect */}
+            <div
+              className="absolute inset-0 rounded-none blur-sm opacity-50 transition-all duration-300"
+              style={{
+                width: `${progress}%`,
+                background: 'linear-gradient(90deg, hsl(var(--primary)), hsl(var(--success)))'
+              }}
+            />
           </div>
-        )}
 
-        {/* Navigation */}
-        <div className="flex items-center justify-between px-6 py-6">
-          <Button
-            variant="ghost"
-            onClick={prevStep}
-            disabled={currentStep === 0}
-            className="text-white/60 hover:text-white hover:bg-white/10 gap-2"
-          >
-            <ChevronLeft size={18} />
-            Previous
-          </Button>
+          {/* Navigation buttons */}
+          <div className="flex items-center justify-between px-6 py-5">
+            <button
+              onClick={handlePrev}
+              disabled={currentStep === 0}
+              className="flex items-center gap-2 min-w-[48px] min-h-[48px] px-4 rounded-xl transition-colors disabled:opacity-30"
+              style={{
+                color: `${TEXT}CC`,
+                backgroundColor: `${TEXT}10`,
+                border: `1px solid ${TEXT}20`
+              }}
+            >
+              <ChevronLeft size={16} />
+              <span>Previous</span>
+            </button>
 
-          {/* Step dots */}
-          <div className="flex items-center gap-1.5">
-            {instructions.map((_, i) => (
+            {/* Step indicator */}
+            <span className="text-xs" style={{ color: `${TEXT}50` }}>
+              {currentStep + 1} / {instructions.length}
+            </span>
+
+            {currentStep === totalSteps - 1 ? (
               <button
-                key={i}
-                onClick={() => setStep(i)}
-                className={cn(
-                  'h-2 rounded-full transition-all',
-                  i === currentStep ? 'w-6 bg-primary' : 'w-2 bg-white/20 hover:bg-white/40'
-                )}
-              />
-            ))}
+                onClick={handleNext}
+                className="flex items-center gap-2 min-w-[48px] min-h-[48px] px-5 rounded-xl font-semibold transition-colors bg-success hover:bg-success/90 text-white"
+              >
+                <CheckCircle2 size={16} />
+                Done Cooking!
+              </button>
+            ) : (
+              <button
+                onClick={handleNext}
+                className="flex items-center gap-2 min-w-[48px] min-h-[48px] px-4 rounded-xl transition-colors"
+                style={{
+                  color: `${TEXT}CC`,
+                  backgroundColor: `${TEXT}10`,
+                  border: `1px solid ${TEXT}20`
+                }}
+              >
+                <span>Next</span>
+                <ChevronRight size={16} />
+              </button>
+            )}
           </div>
-
-          <Button
-            variant="ghost"
-            onClick={currentStep === totalSteps - 1 ? handleExit : nextStep}
-            className="text-white/60 hover:text-white hover:bg-white/10 gap-2"
-          >
-            {currentStep === totalSteps - 1 ? 'Finish' : 'Next'}
-            <ChevronRight size={18} />
-          </Button>
         </div>
       </div>
     </div>
   )
+}
+
+// Safely coerce parsedIngredients JSON field to a typed array
+function safeParsedIngredients(value: unknown): ParsedIngredient[] | null {
+  if (!value) return null
+  let arr: unknown[] | null = null
+  if (Array.isArray(value)) arr = value
+  else if (typeof value === 'string') {
+    try {
+      const p = JSON.parse(value)
+      if (Array.isArray(p)) arr = p
+    } catch {
+      return null
+    }
+  }
+  if (!arr || arr.length === 0) return null
+  if (typeof arr[0] === 'object' && arr[0] !== null && 'ingredient' in arr[0]) {
+    return arr as ParsedIngredient[]
+  }
+  return null
 }

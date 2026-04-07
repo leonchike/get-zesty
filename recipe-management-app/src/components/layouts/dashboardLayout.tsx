@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Logo } from "@/components/ui/header/logo";
 import SidebarContent from "@/components/ui/sidebar-content";
-import Search from "@/features/search-filters/components/search";
+import UniversalSearch from "@/features/search-filters/components/universal-search";
 import UserMenu from "@/components/ui/header/user-menu";
 import { useSession } from "next-auth/react";
 import PageWrapper from "@/components/motion/page-wrapper";
@@ -50,7 +50,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
             user ? "ml-8 md:ml-36" : "ml-8"
           } flex items-center justify-between gap-12`}
         >
-          <Search />
+          <UniversalSearch />
           <UserMenu />
         </div>
       </header>
