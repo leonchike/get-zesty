@@ -93,8 +93,12 @@ export default function UniversalSearch() {
         </kbd>
       </button>
 
-      {/* Search modal */}
-      <CommandDialog open={open} onOpenChange={setOpen}>
+      {/* Search modal.
+          shouldFilter=false: our server already performs hybrid (FTS+trigram+vector)
+          ranking. cmdk's built-in substring matcher would re-hide anything whose
+          title doesn't literally contain the query (e.g. "goat roast" ≠
+          "Whole Roasted Goat Shoulder") and defeat the purpose. */}
+      <CommandDialog open={open} onOpenChange={setOpen} shouldFilter={false}>
         <CommandInput
           placeholder="Search recipes & cookbooks..."
           value={query}
