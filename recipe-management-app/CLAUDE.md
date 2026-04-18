@@ -59,6 +59,37 @@ npm run worker
 
 **Acceptance test:** Open SearchModal, type `fish taco`. `The Fish Shop's Mahi Mahi Tacos` must appear in the top results — it's the canonical case that plain ILIKE substring search can't hit. See `src/lib/search/hybrid-search.ts` for the three-way FTS+trigram+vector RRF fusion.
 
+### Job queue on Vercel (production)
+
+The `scripts/worker.ts` long-running process can't run on Vercel. Production uses Vercel Cron to hit `/api/jobs/run` every minute. Both paths share `src/lib/jobs/runner.ts` (atomic `SKIP LOCKED` pickup, exponential backoff, MAX_ATTEMPTS=5).
+
+**Files:**
+- `src/app/api/jobs/run/route.ts` — cron target, bounded to ~50s per invocation
+- `vercel.json` — `{ crons: [{ path: "/api/jobs/run", schedule: "* * * * *" }] }`
+
+**One-time Vercel setup (per environment):**
+```bash
+# Generate a secret for the cron-vs-everyone-else check
+openssl rand -hex 32
+
+# Add it to each environment (production / preview / development)
+vercel env add CRON_SECRET production   # paste the secret when prompted
+vercel env add CRON_SECRET preview
+vercel env add CRON_SECRET development
+
+# Deploy so the crons activate
+vercel --prod
+```
+
+Vercel automatically injects `Authorization: Bearer $CRON_SECRET` on each cron request; the route rejects anything else with 401.
+
+**Smoke test after deploy:**
+```bash
+curl -X POST -H "Authorization: Bearer $CRON_SECRET" \
+  https://<your-app>.vercel.app/api/jobs/run
+```
+Should return `{"ok":true, "processed":N, ...}`.
+
 ## Architecture Overview
 
 ### Tech Stack
