@@ -108,14 +108,14 @@ export async function searchRecipes(
   const sql = `
     WITH fts AS (
       SELECT r.id,
-             ts_rank_cd(r."searchVector", websearch_to_tsquery('english', $query)) AS score,
+             ts_rank_cd(r."searchVector", websearch_to_tsquery('english', immutable_unaccent($query))) AS score,
              row_number() OVER (
-               ORDER BY ts_rank_cd(r."searchVector", websearch_to_tsquery('english', $query)) DESC
+               ORDER BY ts_rank_cd(r."searchVector", websearch_to_tsquery('english', immutable_unaccent($query))) DESC
              ) AS rank
       FROM "Recipe" r
       WHERE r."isDeleted" = false
         AND ${userVisibilitySQL}
-        AND r."searchVector" @@ websearch_to_tsquery('english', $query)
+        AND r."searchVector" @@ websearch_to_tsquery('english', immutable_unaccent($query))
         ${cuisineFilter ? `AND r."cuisineType" = ANY($cuisineFilter)` : ""}
         ${mealFilter ? `AND r."mealType" = ANY($mealFilter)` : ""}
       LIMIT 100
@@ -181,7 +181,7 @@ export async function searchRecipes(
       ts_headline(
         'english',
         j.title,
-        websearch_to_tsquery('english', $query),
+        websearch_to_tsquery('english', immutable_unaccent($query)),
         'StartSel=<mark>, StopSel=</mark>, HighlightAll=true'
       ) AS "titleHighlight"
     FROM joined j
@@ -241,11 +241,11 @@ export async function searchCookbookRecipesHybrid(
     WITH fts AS (
       SELECT cr.id,
              row_number() OVER (
-               ORDER BY ts_rank_cd(cr."searchVector", websearch_to_tsquery('english', $query)) DESC
+               ORDER BY ts_rank_cd(cr."searchVector", websearch_to_tsquery('english', immutable_unaccent($query))) DESC
              ) AS rank
       FROM "CookbookRecipe" cr
       WHERE cr."userId" = $userId
-        AND cr."searchVector" @@ websearch_to_tsquery('english', $query)
+        AND cr."searchVector" @@ websearch_to_tsquery('english', immutable_unaccent($query))
       LIMIT 100
     ),
     trgm AS (
@@ -278,7 +278,7 @@ export async function searchCookbookRecipesHybrid(
       ts_headline(
         'english',
         cr.title,
-        websearch_to_tsquery('english', $query),
+        websearch_to_tsquery('english', immutable_unaccent($query)),
         'StartSel=<mark>, StopSel=</mark>, HighlightAll=true'
       ) AS "titleHighlight"
     FROM fused f
