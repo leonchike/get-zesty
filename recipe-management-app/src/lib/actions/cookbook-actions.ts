@@ -4,6 +4,8 @@
 
 import prisma from "@/lib/prisma-client";
 import { generateEmbedding } from "@/lib/embeddings";
+import { searchCookbookRecipesHybrid } from "@/lib/search/hybrid-search";
+import { isQueryActionable } from "@/lib/search/query";
 
 /**
  * List all cookbooks for a user
@@ -273,53 +275,36 @@ export async function clearCookbookData(
 }
 
 /**
- * Quick text search across cookbook recipes (no embeddings needed).
- * Searches title and ingredients with case-insensitive contains.
+ * Quick cookbook search — hybrid (FTS + trigram + vector) with RRF fusion.
+ * Keeps the same return shape as before so existing callers don't need to change.
  */
 export async function quickSearchCookbookRecipes(
   userId: string,
   query: string,
   limit: number = 5
 ) {
-  // Fetch up to 50 results, then re-rank by relevance (title > description > ingredients)
-  const fetchLimit = Math.max(limit, 50);
-  const raw = await prisma.cookbookRecipe.findMany({
-    where: {
-      userId,
-      OR: [
-        { title: { contains: query, mode: "insensitive" } },
-        { ingredients: { contains: query, mode: "insensitive" } },
-        { description: { contains: query, mode: "insensitive" } },
-      ],
-    },
-    orderBy: { title: "asc" },
-    take: fetchLimit,
-    select: {
-      id: true,
-      title: true,
-      description: true,
-      cookbookId: true,
-      cuisineType: true,
-      imageUrl: true,
-      cookbook: {
-        select: { title: true, author: true, coverUrl: true },
-      },
-    },
-  });
+  if (!isQueryActionable(query)) {
+    return { recipes: [], totalCount: 0 };
+  }
 
-  // Re-rank: title matches first, then description, then ingredient-only
-  const q = query.toLowerCase();
-  const ranked = raw.sort((a, b) => {
-    const aTitle = a.title?.toLowerCase().includes(q) ? 0 : 1;
-    const bTitle = b.title?.toLowerCase().includes(q) ? 0 : 1;
-    if (aTitle !== bTitle) return aTitle - bTitle;
-    const aDesc = a.description?.toLowerCase().includes(q) ? 0 : 1;
-    const bDesc = b.description?.toLowerCase().includes(q) ? 0 : 1;
-    return aDesc - bDesc;
-  });
+  const hybrid = await searchCookbookRecipesHybrid(userId, query, { limit });
 
-  const recipes = ranked.slice(0, limit);
-  return { recipes, totalCount: raw.length };
+  const recipes = hybrid.map((h) => ({
+    id: h.id,
+    title: h.title,
+    description: h.description,
+    cookbookId: h.cookbookId,
+    cuisineType: h.cuisineType,
+    imageUrl: h.imageUrl,
+    titleHighlight: h.titleHighlight,
+    cookbook: {
+      title: h.cookbookTitle,
+      author: h.cookbookAuthor,
+      coverUrl: h.cookbookCoverUrl,
+    },
+  }));
+
+  return { recipes, totalCount: recipes.length };
 }
 
 /**

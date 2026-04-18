@@ -154,6 +154,11 @@ model Recipe {
   parsedIngredients   Json?
   parsedInstructions  Json?
   GroceryItem         GroceryItem[]
+
+  // Hybrid search columns — DDL lives in prisma/manual-sql/add_search_infrastructure.sql
+  searchVector        Unsupported("tsvector")?
+  embedding           Unsupported("vector(1536)")?
+  embeddingUpdatedAt  DateTime?
 }
 
 enum RecipeSource {
@@ -234,6 +239,9 @@ model CookbookRecipe {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
+  // Weighted tsvector — DDL lives in prisma/manual-sql/add_search_infrastructure.sql
+  searchVector Unsupported("tsvector")?
+
   @@index([userId])
   @@index([cookbookId])
 }
@@ -246,5 +254,26 @@ model RecipeChunk {
   cookbookRecipe   CookbookRecipe @relation(fields: [cookbookRecipeId], references: [id], onDelete: Cascade)
   createdAt        DateTime       @default(now())
 
+  // DDL lives in prisma/manual-sql/add_pgvector_cookbook_indexes.sql
+  embedding        Unsupported("vector(1536)")?
+
   @@index([cookbookRecipeId])
+}
+
+// SKIP LOCKED job queue — initially used for async recipe embedding.
+// Worker: scripts/worker.ts. Enqueue helper: src/lib/jobs/enqueue.ts.
+model Job {
+  id        String    @id @default(cuid())
+  type      String
+  payload   Json
+  state     String    @default("pending") // pending | running | done | failed
+  attempts  Int       @default(0)
+  lastError String?
+  runAfter  DateTime  @default(now())
+  lockedAt  DateTime?
+  lockedBy  String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([state, runAfter])
 }

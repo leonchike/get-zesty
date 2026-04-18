@@ -1,6 +1,6 @@
 {
   "name": "get-zesty-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Get Zesty — Recipe Manager for macOS",
   "main": "./out/main/index.js",
   "scripts": {

@@ -38,6 +38,27 @@ npm test -- --watch               # Run tests in watch mode
 npm test -- path/to/file.test.ts  # Run specific test file
 ```
 
+### Hybrid Search & Job Queue
+```bash
+# One-time migration (after `npx prisma migrate dev` creates Job table)
+psql "$DATABASE_URL" -f prisma/manual-sql/add_search_infrastructure.sql
+
+# Backfill embeddings for existing recipes (idempotent)
+npm run embed-recipes
+
+# Run the async worker (picks up embed_recipe jobs via FOR UPDATE SKIP LOCKED)
+npm run worker
+```
+
+**Order of ops for a fresh environment:**
+1. `npx prisma migrate dev` — creates `Job` table + adds Unsupported search columns to Recipe/CookbookRecipe.
+2. `psql ... -f prisma/manual-sql/add_pgvector_cookbook_indexes.sql` — original pgvector setup (RecipeChunk).
+3. `psql ... -f prisma/manual-sql/add_search_infrastructure.sql` — extensions + generated tsvectors + GIN/HNSW/trigram indexes.
+4. `npm run embed-recipes` — backfills embeddings for all existing Recipe rows.
+5. `npm run worker` — long-running process that keeps new recipes embedded.
+
+**Acceptance test:** Open SearchModal, type `fish taco`. `The Fish Shop's Mahi Mahi Tacos` must appear in the top results — it's the canonical case that plain ILIKE substring search can't hit. See `src/lib/search/hybrid-search.ts` for the three-way FTS+trigram+vector RRF fusion.
+
 ## Architecture Overview
 
 ### Tech Stack

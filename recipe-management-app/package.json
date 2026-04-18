@@ -13,6 +13,8 @@
     "prisma:studio": "prisma studio",
     "test-scraper": "node -r ts-node/register scripts/test-scraper.ts",
     "ingest-cookbook": "tsx scripts/ingest-cookbook.ts",
+    "worker": "tsx scripts/worker.ts",
+    "embed-recipes": "tsx scripts/embed-recipes.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

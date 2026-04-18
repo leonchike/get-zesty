@@ -20,7 +20,9 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps): JSX.Element 
 
   const { recipeResults, cookbookResults, isLoading, isEmpty, isActive } =
     useSearchResults(query)
-  const allItems: SearchResultItem[] = [...recipeResults, ...cookbookResults]
+  const visibleRecipes = showAllRecipes ? recipeResults : recipeResults.slice(0, 10)
+  const visibleCookbook = showAllCookbook ? cookbookResults : cookbookResults.slice(0, 10)
+  const allItems: SearchResultItem[] = [...visibleRecipes, ...visibleCookbook]
 
   // Focus input on open
   useEffect(() => {
@@ -29,6 +31,8 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps): JSX.Element 
     } else {
       setQuery('')
       setHighlightIndex(-1)
+      setShowAllRecipes(false)
+      setShowAllCookbook(false)
     }
   }, [isOpen])
 
@@ -70,7 +74,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps): JSX.Element 
   const hasResults = recipeResults.length > 0 || cookbookResults.length > 0
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh]">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-[8vh]">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -105,7 +109,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps): JSX.Element 
         </div>
 
         {/* Results */}
-        <div className="max-h-[50vh] overflow-y-auto scrollbar-thin">
+        <div className="max-h-[70vh] overflow-y-auto scrollbar-thin">
           {!hasQuery && (
             <div className="py-16 text-center text-sm text-muted-foreground">
               <Search size={28} className="mx-auto mb-3 opacity-20" />
@@ -135,22 +139,36 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps): JSX.Element 
           )}
 
           {/* Recipe results */}
-          {recipeResults.length > 0 && (
-            <div className="p-2">
-              <p className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
-                Recipes
-              </p>
-              {recipeResults.map((item, i) => (
-                <ResultRow
-                  key={item.id}
-                  item={item}
-                  icon={ChefHat}
-                  isHighlighted={highlightIndex === i}
-                  onClick={() => selectResult(item)}
-                />
-              ))}
-            </div>
-          )}
+          {recipeResults.length > 0 && (() => {
+            const INITIAL = 10
+            const visible = showAllRecipes ? recipeResults : recipeResults.slice(0, INITIAL)
+            const hasMore = recipeResults.length > INITIAL
+            return (
+              <div className="p-2">
+                <p className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+                  Recipes
+                  <span className="ml-1.5 text-muted-foreground/60">{recipeResults.length}</span>
+                </p>
+                {visible.map((item, i) => (
+                  <ResultRow
+                    key={item.id}
+                    item={item}
+                    icon={ChefHat}
+                    isHighlighted={highlightIndex === i}
+                    onClick={() => selectResult(item)}
+                  />
+                ))}
+                {hasMore && !showAllRecipes && (
+                  <button
+                    onClick={() => setShowAllRecipes(true)}
+                    className="w-full text-center py-2 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                  >
+                    Show {recipeResults.length - INITIAL} more recipes
+                  </button>
+                )}
+              </div>
+            )
+          })()}
 
           {/* Separator */}
           {recipeResults.length > 0 && cookbookResults.length > 0 && (
@@ -158,25 +176,41 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps): JSX.Element 
           )}
 
           {/* Cookbook results */}
-          {cookbookResults.length > 0 && (
-            <div className="p-2">
-              <p className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
-                Cookbook Recipes
-              </p>
-              {cookbookResults.map((item, i) => {
-                const globalIndex = recipeResults.length + i
-                return (
-                  <ResultRow
-                    key={item.id}
-                    item={item}
-                    icon={BookOpen}
-                    isHighlighted={highlightIndex === globalIndex}
-                    onClick={() => selectResult(item)}
-                  />
-                )
-              })}
-            </div>
-          )}
+          {cookbookResults.length > 0 && (() => {
+            const INITIAL = 10
+            const visibleRecipes = showAllRecipes ? recipeResults : recipeResults.slice(0, 10)
+            const visible = showAllCookbook ? cookbookResults : cookbookResults.slice(0, INITIAL)
+            const hasMore = cookbookResults.length > INITIAL
+            const recipeOffset = visibleRecipes.length
+            return (
+              <div className="p-2">
+                <p className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+                  Cookbook Recipes
+                  <span className="ml-1.5 text-muted-foreground/60">{cookbookResults.length}</span>
+                </p>
+                {visible.map((item, i) => {
+                  const globalIndex = recipeOffset + i
+                  return (
+                    <ResultRow
+                      key={item.id}
+                      item={item}
+                      icon={BookOpen}
+                      isHighlighted={highlightIndex === globalIndex}
+                      onClick={() => selectResult(item)}
+                    />
+                  )
+                })}
+                {hasMore && !showAllCookbook && (
+                  <button
+                    onClick={() => setShowAllCookbook(true)}
+                    className="w-full text-center py-2 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                  >
+                    Show {cookbookResults.length - INITIAL} more cookbook recipes
+                  </button>
+                )}
+              </div>
+            )
+          })()}
         </div>
       </div>
     </div>
@@ -223,7 +257,15 @@ function ResultRow({
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{item.title}</p>
+        {item.titleHighlight ? (
+          <p
+            className="text-sm font-medium truncate [&>mark]:bg-primary/20 [&>mark]:text-primary [&>mark]:rounded [&>mark]:px-0.5"
+            // Server-generated; only <mark> tags are allowed (sanitized below).
+            dangerouslySetInnerHTML={{ __html: sanitizeMarkOnly(item.titleHighlight) }}
+          />
+        ) : (
+          <p className="text-sm font-medium truncate">{item.title}</p>
+        )}
         {item.subtitle && (
           <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
         )}
@@ -231,4 +273,19 @@ function ResultRow({
       <Icon size={14} className="text-muted-foreground/30 flex-shrink-0" />
     </button>
   )
+}
+
+/**
+ * Strips any tag that isn't <mark>…</mark>, then escapes remaining text.
+ * The server returns ts_headline output with `StartSel=<mark>` / `StopSel=</mark>`,
+ * but defence-in-depth: treat the payload as untrusted and only allow <mark>.
+ */
+function sanitizeMarkOnly(raw: string): string {
+  // Escape everything first
+  const escaped = raw
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+  // Restore only <mark> and </mark>
+  return escaped.replace(/&lt;mark&gt;/g, '<mark>').replace(/&lt;\/mark&gt;/g, '</mark>')
 }

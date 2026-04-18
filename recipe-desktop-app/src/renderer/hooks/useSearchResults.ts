@@ -9,6 +9,8 @@ export interface SearchResultItem {
   id: string
   type: 'recipe' | 'cookbook-recipe'
   title: string
+  /** Server-rendered HTML with <mark>…</mark> around matched terms, or null if unavailable. */
+  titleHighlight: string | null
   subtitle: string | null
   imageUrl: string | null
   href: string
@@ -39,13 +41,22 @@ export function useSearchResults(query: string) {
         limit: 100,
         page: 1
       })
-      return data as { recipes: Array<{ id: string; title: string; cuisineType?: string; imageUrl?: string }>; totalCount: number }
+      return data as {
+        recipes: Array<{
+          id: string
+          title: string
+          titleHighlight?: string
+          cuisineType?: string
+          imageUrl?: string
+        }>
+        totalCount: number
+      }
     },
     enabled,
     staleTime: 30_000
   })
 
-  // Cookbook recipe quick search (text-based, no embeddings)
+  // Cookbook recipe quick search (hybrid: FTS + trigram + vector)
   const cookbookQuery = useQuery({
     queryKey: ['quick-cookbook-search', debouncedQuery],
     queryFn: async () => {
@@ -57,6 +68,7 @@ export function useSearchResults(query: string) {
         recipes: Array<{
           id: string
           title: string
+          titleHighlight?: string
           description: string | null
           cookbookId: string
           cuisineType: string | null
@@ -80,6 +92,7 @@ export function useSearchResults(query: string) {
           id: r.id,
           type: 'recipe',
           title: r.title,
+          titleHighlight: r.titleHighlight ?? null,
           subtitle: r.cuisineType || null,
           imageUrl: formatImageUrl(r.imageUrl),
           href: `/recipes/${r.id}`
@@ -94,6 +107,7 @@ export function useSearchResults(query: string) {
           id: r.id,
           type: 'cookbook-recipe',
           title: r.title,
+          titleHighlight: r.titleHighlight ?? null,
           subtitle: r.cookbook?.title || null,
           imageUrl: formatImageUrl(r.cookbook?.coverUrl || r.imageUrl),
           href: `/cookbooks/${r.cookbookId}/recipes/${r.id}`

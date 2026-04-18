@@ -166,6 +166,7 @@ export async function processUserMessage(
         rating: null,
         favoriteCount: 0,
         reviewCount: 0,
+        embeddingUpdatedAt: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };

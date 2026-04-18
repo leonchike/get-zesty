@@ -29,6 +29,22 @@ import { generateAiRecipeCaller } from "@/lib/functions/ai-recipe-gen";
 import { cleanRecipeWithAI } from "@/lib/functions/ai-scraper-cleaner";
 import axios from "axios";
 
+// Async work
+import { enqueueEmbedRecipe } from "@/lib/jobs/enqueue";
+
+// Fire-and-forget: enqueue never blocks on external work, but we still
+// don't want a DB hiccup here to fail the user's recipe save.
+async function enqueueEmbedSafely(recipeId: string): Promise<void> {
+  try {
+    await enqueueEmbedRecipe(recipeId);
+  } catch (err) {
+    console.error("[recipe-actions] failed to enqueue embed job", err);
+  }
+}
+
+// Fields whose changes should trigger re-embedding.
+const EMBED_FIELDS = ["title", "description", "ingredients"] as const;
+
 // Start Create recipe functions
 export async function createRecipe(
   recipe: Omit<Recipe, "id" | "userId" | "createdAt" | "updatedAt">,
@@ -58,6 +74,7 @@ export async function createRecipe(
       },
     });
 
+    await enqueueEmbedSafely(newRecipe.id);
     revalidatePath("/recipes");
     return { id: newRecipe.id };
   } catch (error) {
@@ -136,6 +153,15 @@ export async function updateRecipe(
       where: { id: id },
       data: updateData,
     });
+
+    // Re-embed only if a field that feeds the embedding actually changed.
+    const embedFieldChanged = EMBED_FIELDS.some((f) => {
+      const incoming = (updateData as Record<string, unknown>)[f];
+      return incoming !== undefined && incoming !== (existingRecipe as any)[f];
+    });
+    if (embedFieldChanged) {
+      await enqueueEmbedSafely(updatedRecipe.id);
+    }
 
     revalidatePath("/recipes");
     return updatedRecipe;

@@ -6,6 +6,8 @@ import prisma from "@/lib/prisma-client";
 import { Recipe, Prisma } from "@prisma/client";
 import { getUser, redirectToLogin } from "@/lib/actions/auth-actions";
 import { getUserIdFromJwt } from "@/lib/helpers/get-user-id-from-jwt";
+import { searchRecipes as hybridSearchRecipes } from "@/lib/search/hybrid-search";
+import { isQueryActionable } from "@/lib/search/query";
 
 export interface FetchRecipesParams {
   token?: string;
@@ -21,7 +23,7 @@ export interface FetchRecipesParams {
 }
 
 export interface FetchRecipesResult {
-  recipes: Recipe[];
+  recipes: Array<Recipe & { titleHighlight?: string }>;
   nextPage: number | null;
   totalCount: number;
 }
@@ -98,63 +100,66 @@ export async function fetchRecipes(
       andConditions.push({ mealType: { in: filteredMealTypes } });
     }
 
-    // Text search — matches across title, description, ingredients, cuisine, and meal type
-    // Uses two-pass approach: title matches first, then broader matches, to rank by relevance
-    if (search?.trim()) {
-      andConditions.push({
-        OR: [
-          { title: { contains: search, mode: "insensitive" } },
-          { description: { contains: search, mode: "insensitive" } },
-          { ingredients: { contains: search, mode: "insensitive" } },
-          { cuisineType: { contains: search, mode: "insensitive" } },
-          { mealType: { contains: search, mode: "insensitive" } },
-        ],
+    // ─── Search mode: delegate to hybrid search (FTS + trigram + vector + RRF) ───
+    if (search && isQueryActionable(search)) {
+      const topN = offset + limit; // fetch enough to slice the current page
+      const hybrid = await hybridSearchRecipes(userId, search, {
+        limit: topN,
+        filters: {
+          cuisineTypes: filteredCuisineTypes,
+          mealTypes: filteredMealTypes,
+          isFavorite: isFavorite ?? undefined,
+          isPinned: isPinned ?? undefined,
+          includePublic: isPersonal ? false : true,
+        },
       });
+
+      if (hybrid.length === 0) {
+        return { recipes: [], nextPage: null, totalCount: 0 };
+      }
+
+      // Hydrate full Recipe rows (with includes) and preserve hybrid order.
+      const orderedIds = hybrid.map((h) => h.id);
+      const byId: Record<string, (typeof hybrid)[number]> = Object.fromEntries(
+        hybrid.map((h) => [h.id, h])
+      );
+      const fullRecipes = await prisma.recipe.findMany({
+        where: { id: { in: orderedIds }, isDeleted: false },
+        include: { FavoriteRecipe: true, PinnedRecipe: true },
+      });
+      const recipeById: Record<string, (typeof fullRecipes)[number]> =
+        Object.fromEntries(fullRecipes.map((r) => [r.id, r]));
+
+      const sliced = orderedIds.slice(offset, offset + limit);
+      const recipes = sliced
+        .map((id) => {
+          const r = recipeById[id];
+          if (!r) return null;
+          return { ...r, titleHighlight: byId[id]?.titleHighlight };
+        })
+        .filter(Boolean) as Array<Recipe & { titleHighlight?: string }>;
+
+      const totalCount = hybrid.length;
+      const nextPage = offset + limit < totalCount ? page + 1 : null;
+      return { recipes, nextPage, totalCount };
     }
 
-    const whereClause: Prisma.RecipeWhereInput = {
-      AND: andConditions,
-    };
-
-    // Fetch extra when searching to allow re-ranking by relevance
-    const fetchLimit = search?.trim() ? Math.max(limit, 50) : limit;
+    // ─── No search term: use the existing Prisma path (filters + pagination) ───
+    const whereClause: Prisma.RecipeWhereInput = { AND: andConditions };
 
     const [fetchedRecipes, totalCount] = await prisma.$transaction([
       prisma.recipe.findMany({
         where: whereClause,
         orderBy: { updatedAt: "desc" },
         skip: offset,
-        take: fetchLimit,
-        include: {
-          FavoriteRecipe: true,
-          PinnedRecipe: true,
-        },
+        take: limit,
+        include: { FavoriteRecipe: true, PinnedRecipe: true },
       }),
       prisma.recipe.count({ where: whereClause }),
     ]);
 
-    // Re-rank: title matches first, then description, then other fields
-    let recipes = fetchedRecipes;
-    if (search?.trim()) {
-      const s = search.toLowerCase();
-      recipes = [...fetchedRecipes].sort((a, b) => {
-        const aTitle = a.title?.toLowerCase().includes(s) ? 0 : 1;
-        const bTitle = b.title?.toLowerCase().includes(s) ? 0 : 1;
-        if (aTitle !== bTitle) return aTitle - bTitle;
-        const aDesc = a.description?.toLowerCase().includes(s) ? 0 : 1;
-        const bDesc = b.description?.toLowerCase().includes(s) ? 0 : 1;
-        return aDesc - bDesc;
-      });
-      recipes = recipes.slice(0, limit);
-    }
-
     const nextPage = offset + limit < totalCount ? page + 1 : null;
-
-    return {
-      recipes,
-      nextPage,
-      totalCount,
-    };
+    return { recipes: fetchedRecipes, nextPage, totalCount };
   } catch (error) {
     console.error("Error fetching recipes:", error);
     throw new Error("Failed to fetch recipes");
