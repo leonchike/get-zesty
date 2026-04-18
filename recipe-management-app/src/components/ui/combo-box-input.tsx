@@ -53,7 +53,10 @@ export function Combobox({
           className="min-w-[200px] h-10 justify-between font-normal text-sm dark:bg-primaryHover-dark dark:border-primaryHover-dark dark:text-textColor-dark dark:placeholder:text-textColor-dark/80 dark:focus:ring-pageBg-light"
         >
           {value
-            ? options.find((option) => option.value === value)?.label
+            ? options.find(
+                (option) =>
+                  option.value.toLowerCase() === String(value).toLowerCase()
+              )?.label ?? value
             : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>

@@ -338,7 +338,7 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ initialRecipe }) => {
             <Label htmlFor="mealType">Recipe Type</Label>
             <Select
               onValueChange={(value: string) => setValue("mealType", value)}
-              defaultValue={form.getValues("mealType")}
+              value={form.watch("mealType") ?? ""}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select recipe type" />
@@ -360,11 +360,7 @@ const RecipeForm: React.FC<RecipeFormProps> = ({ initialRecipe }) => {
         </div>
 
         <div className="py-8">
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full dark:text-textColor-light"
-          >
+          <Button type="submit" disabled={isSubmitting} className="w-full">
             {isSubmitting
               ? "Saving..."
               : initialRecipe

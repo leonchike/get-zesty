@@ -72,8 +72,12 @@ export const useRecipeForm = (recipe?: Recipe) => {
           totalTime: recipe.totalTime ?? null,
           equipment: recipe.equipment ?? null,
           notes: recipe.notes ?? null,
-          cuisineType: recipe.cuisineType ?? undefined,
-          mealType: recipe.mealType ?? undefined,
+          // Normalize to lowercase — option values in CUISINE_TYPES /
+          // RECIPE_MEAL_TYPES are lowercase, but legacy DB rows are
+          // title-cased ("Greek", "Appetizer"). Without this, the select's
+          // options.find() returns undefined and the control renders empty.
+          cuisineType: recipe.cuisineType?.toLowerCase() ?? undefined,
+          mealType: recipe.mealType?.toLowerCase() ?? undefined,
           dietaryRestrictions: recipe.dietaryRestrictions ?? [],
           tags: recipe.tags ?? [],
           sourceUrl: recipe.sourceUrl ?? undefined,
