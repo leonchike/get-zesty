@@ -23,11 +23,12 @@ npm run type-check   # TypeScript type checking
 npm run cf-typegen   # Regenerate Cloudflare types
 ```
 
-## Tools (16 total)
+## Tools (23 total)
 
 ### Recipe (5): searchRecipes, getRecipe, createRecipe, updateRecipe, deleteRecipe
 ### Grocery (6): getGroceryList, addGroceryItem, addMultipleGroceryItems, updateGroceryItem, completeGroceryItems, deleteGroceryItem
 ### Cookbook (5): searchCookbookRecipes, getCookbookRecipe, listCookbooks, listCookbookRecipes, searchByIngredient
+### Inventory (8): getInventory, addInventoryItem, addMultipleInventoryItems, updateInventoryItem, consumeInventoryItem, discardInventoryItem, deleteInventoryItem, listExpiringSoon
 
 ## Key Files
 

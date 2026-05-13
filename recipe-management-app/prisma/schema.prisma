@@ -33,6 +33,8 @@ model User {
   isAccountDisabled Boolean          @default(false)
   cookbooks         Cookbook[]
   cookbookRecipes   CookbookRecipe[]
+  inventoryItems    InventoryItem[]
+  inventoryLocations InventoryLocation[]
 }
 
 model Account {
@@ -116,6 +118,54 @@ enum GroceryItemStatus {
   DELETED
 }
 
+model InventoryItem {
+  id           String              @id @default(cuid())
+  name         String
+  quantity     Int?
+  quantityUnit String?
+  notes        String?
+  status       InventoryItemStatus @default(ACTIVE)
+  addedAt      DateTime            @default(now())
+  expiresAt    DateTime?
+
+  userId       String
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  locationId   String
+  location     InventoryLocation   @relation(fields: [locationId], references: [id])
+
+  recipeId     String?
+  recipe       Recipe?             @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([userId, status])
+  @@index([userId, locationId])
+  @@index([userId, expiresAt])
+}
+
+model InventoryLocation {
+  id            String          @id @default(cuid())
+  name          String
+  emoji         String?
+  sortOrder     Int             @default(0)
+  isUserCreated Boolean         @default(false)
+  userId        String?
+  user          User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items         InventoryItem[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@unique([userId, name])
+}
+
+enum InventoryItemStatus {
+  ACTIVE
+  CONSUMED
+  DISCARDED
+}
+
 model Recipe {
   id                  String           @id @default(cuid())
   userId              String
@@ -154,6 +204,7 @@ model Recipe {
   parsedIngredients   Json?
   parsedInstructions  Json?
   GroceryItem         GroceryItem[]
+  inventoryItems      InventoryItem[]
 
   // Hybrid search columns — DDL lives in prisma/manual-sql/add_search_infrastructure.sql
   searchVector        Unsupported("tsvector")?

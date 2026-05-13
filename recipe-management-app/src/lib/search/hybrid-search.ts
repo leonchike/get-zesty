@@ -202,13 +202,20 @@ export async function searchRecipes(
 
 // ─────────────────────────── Cookbook-recipe search ───────────────────────────
 
+export interface CookbookSearchFilters {
+  cookbookId?: string;
+  cuisineType?: string;
+  mealType?: string;
+}
+
 export async function searchCookbookRecipesHybrid(
   userId: string,
   rawQuery: string,
-  opts: { limit?: number } = {}
+  opts: { limit?: number; filters?: CookbookSearchFilters } = {}
 ): Promise<HybridCookbookResult[]> {
   if (!isQueryActionable(rawQuery)) return [];
   const limit = opts.limit ?? 10;
+  const filters = opts.filters ?? {};
   const tsQuery = buildWebsearchQuery(rawQuery);
   const trgmQuery = rawQuery.trim().toLowerCase();
 
@@ -222,6 +229,15 @@ export async function searchCookbookRecipesHybrid(
     console.warn("[hybrid-search] cookbook embedding failed, lexical+fuzzy only", err);
   }
 
+  // Optional CookbookRecipe filter predicates. Shared across all three CTEs + final join.
+  const filterClauses: string[] = [];
+  if (filters.cookbookId) filterClauses.push(`cr."cookbookId" = $cookbookId`);
+  if (filters.cuisineType) filterClauses.push(`cr."cuisineType" = $cuisineType`);
+  if (filters.mealType) filterClauses.push(`cr."mealType" = $mealType`);
+  const filterSQL = filterClauses.length
+    ? ` AND ${filterClauses.join(" AND ")}`
+    : "";
+
   const vectorCTE = embeddingLiteral
     ? `
     vec AS (
@@ -231,6 +247,7 @@ export async function searchCookbookRecipesHybrid(
       JOIN "CookbookRecipe" cr ON cr.id = rc."cookbookRecipeId"
       WHERE cr."userId" = $userId
         AND rc.embedding IS NOT NULL
+        ${filterSQL}
       ORDER BY rc.embedding <=> '${embeddingLiteral}'::vector
       LIMIT 50
     ),`
@@ -246,6 +263,7 @@ export async function searchCookbookRecipesHybrid(
       FROM "CookbookRecipe" cr
       WHERE cr."userId" = $userId
         AND cr."searchVector" @@ websearch_to_tsquery('english', immutable_unaccent($query))
+        ${filterSQL}
       LIMIT 100
     ),
     trgm AS (
@@ -254,6 +272,7 @@ export async function searchCookbookRecipesHybrid(
       FROM "CookbookRecipe" cr
       WHERE cr."userId" = $userId
         AND cr.title % $trgm
+        ${filterSQL}
       LIMIT 50
     ),
     ${vectorCTE}
@@ -284,6 +303,7 @@ export async function searchCookbookRecipesHybrid(
     FROM fused f
     JOIN "CookbookRecipe" cr ON cr.id = f.id
     JOIN "Cookbook" cb ON cb.id = cr."cookbookId"
+    WHERE 1=1 ${filterSQL}
     ORDER BY f.rrf_score DESC
     LIMIT ${Number(limit)};
   `;
@@ -292,6 +312,9 @@ export async function searchCookbookRecipesHybrid(
     userId,
     query: tsQuery,
     trgm: trgmQuery,
+    cookbookId: filters.cookbookId ?? null,
+    cuisineType: filters.cuisineType ?? null,
+    mealType: filters.mealType ?? null,
   });
 }
 

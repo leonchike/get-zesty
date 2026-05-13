@@ -8,6 +8,7 @@ import { resolveUserId } from "../config/allowed-users.js";
 import { registerRecipeTools } from "./register-recipe-tools.js";
 import { registerGroceryTools } from "./register-grocery-tools.js";
 import { registerCookbookTools } from "./register-cookbook-tools.js";
+import { registerInventoryTools } from "./register-inventory-tools.js";
 
 /**
  * Register all MCP tools (recipe, grocery, cookbook)
@@ -33,4 +34,7 @@ export function registerAllTools(server: McpServer, env: Env, props: Props): voi
 
   registerCookbookTools(server, env, props, userId);
   console.log("Cookbook tools registered (4 tools)");
+
+  registerInventoryTools(server, env, props, userId);
+  console.log("Inventory tools registered (8 tools)");
 }

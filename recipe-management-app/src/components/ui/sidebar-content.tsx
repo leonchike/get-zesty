@@ -10,7 +10,7 @@ import {
   NewRecipeIcon,
   CloseIcon,
 } from "@/components/ui/icons/custom-icons";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Refrigerator } from "lucide-react";
 import NavLink from "@/components/ui/sidebar-nav-link";
 import { usePinnedRecipes } from "@/hooks/usePinnedRecipes";
 import { SidebarTimers } from "@/features/cooking-timer/components/sidebar-timers";
@@ -76,6 +76,11 @@ const MainOptions = [
     label: "Groceries",
     href: ROUTES.GROCERIES,
     icon: GroceriesIcon2,
+  },
+  {
+    label: "Inventory",
+    href: ROUTES.INVENTORY,
+    icon: Refrigerator,
   },
 ];
 

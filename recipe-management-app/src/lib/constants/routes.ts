@@ -14,6 +14,7 @@ const ROUTES = {
   CREATE_RECIPE: "/recipes/create",
   COOKBOOKS: "/cookbooks",
   GROCERIES: "/groceries",
+  INVENTORY: "/inventory",
   UNSPLASH_SEARCH: "/api/unsplash-search",
 };
 

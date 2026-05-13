@@ -3,7 +3,6 @@
  */
 
 import prisma from "@/lib/prisma-client";
-import { generateEmbedding } from "@/lib/embeddings";
 import { searchCookbookRecipesHybrid } from "@/lib/search/hybrid-search";
 import { isQueryActionable } from "@/lib/search/query";
 
@@ -77,7 +76,10 @@ export async function getCookbookRecipe(recipeId: string, userId: string) {
 }
 
 /**
- * Hybrid search — vector similarity + full-text search
+ * Cookbook recipe search — hybrid (FTS + trigram + vector) with RRF fusion.
+ * Exposed via /api/mcp/cookbooks/search. Preserves the pre-existing response
+ * shape ({ results: [{ recipe, score, matchType }], totalCount }) so downstream
+ * MCP clients don't break.
  */
 export async function searchCookbookRecipes(
   userId: string,
@@ -89,144 +91,66 @@ export async function searchCookbookRecipes(
     limit?: number;
   }
 ) {
-  const limit = options?.limit ?? 10;
-
-  // Generate embedding for the query
-  const queryEmbedding = await generateEmbedding(query);
-  const embeddingStr = `[${queryEmbedding.join(",")}]`;
-
-  // Build WHERE clause filters
-  const conditions: string[] = [`cr."userId" = $1`];
-  const params: any[] = [userId];
-  let paramIndex = 2;
-
-  if (options?.cookbookId) {
-    conditions.push(`cr."cookbookId" = $${paramIndex}`);
-    params.push(options.cookbookId);
-    paramIndex++;
-  }
-  if (options?.cuisineType) {
-    conditions.push(`cr."cuisineType" = $${paramIndex}`);
-    params.push(options.cuisineType);
-    paramIndex++;
-  }
-  if (options?.mealType) {
-    conditions.push(`cr."mealType" = $${paramIndex}`);
-    params.push(options.mealType);
-    paramIndex++;
+  if (!isQueryActionable(query)) {
+    return { results: [], totalCount: 0 };
   }
 
-  const whereClause = conditions.join(" AND ");
+  const hybrid = await searchCookbookRecipesHybrid(userId, query, {
+    limit: options?.limit ?? 10,
+    filters: {
+      cookbookId: options?.cookbookId,
+      cuisineType: options?.cuisineType,
+      mealType: options?.mealType,
+    },
+  });
 
-  // Hybrid query: combines vector similarity with full-text search
-  const results = await prisma.$queryRawUnsafe<
-    Array<{
-      id: string;
-      title: string;
-      description: string | null;
-      ingredients: string | null;
-      instructions: string | null;
-      pageNumber: number | null;
-      cuisineType: string | null;
-      mealType: string | null;
-      servings: string | null;
-      prepTime: string | null;
-      cookTime: string | null;
-      cookbookId: string;
-      cookbookTitle: string;
-      cookbookAuthor: string | null;
-      vector_score: number;
-      text_score: number;
-      combined_score: number;
-    }>
-  >(
-    `
-    WITH vector_matches AS (
-      SELECT
-        rc."cookbookRecipeId",
-        1 - (rc.embedding <=> '${embeddingStr}'::vector) AS vector_score
-      FROM "RecipeChunk" rc
-      JOIN "CookbookRecipe" cr ON cr.id = rc."cookbookRecipeId"
-      WHERE ${whereClause}
-        AND rc.embedding IS NOT NULL
-      ORDER BY rc.embedding <=> '${embeddingStr}'::vector
-      LIMIT ${limit * 3}
-    ),
-    text_matches AS (
-      SELECT
-        cr.id AS "cookbookRecipeId",
-        ts_rank(
-          to_tsvector('english', coalesce(cr.title,'') || ' ' || coalesce(cr.description,'') || ' ' || coalesce(cr.ingredients,'')),
-          plainto_tsquery('english', $${paramIndex})
-        ) AS text_score
-      FROM "CookbookRecipe" cr
-      WHERE ${whereClause}
-        AND to_tsvector('english', coalesce(cr.title,'') || ' ' || coalesce(cr.description,'') || ' ' || coalesce(cr.ingredients,''))
-            @@ plainto_tsquery('english', $${paramIndex})
-    ),
-    combined AS (
-      SELECT
-        COALESCE(v."cookbookRecipeId", t."cookbookRecipeId") AS recipe_id,
-        COALESCE(v.vector_score, 0) AS vector_score,
-        COALESCE(t.text_score, 0) AS text_score,
-        (COALESCE(v.vector_score, 0) * 0.7 + COALESCE(t.text_score, 0) * 0.3) AS combined_score
-      FROM vector_matches v
-      FULL OUTER JOIN text_matches t ON v."cookbookRecipeId" = t."cookbookRecipeId"
-    )
-    SELECT
-      cr.id,
-      cr.title,
-      cr.description,
-      cr.ingredients,
-      cr.instructions,
-      cr."pageNumber",
-      cr."cuisineType",
-      cr."mealType",
-      cr.servings,
-      cr."prepTime",
-      cr."cookTime",
-      cr."cookbookId",
-      cb.title AS "cookbookTitle",
-      cb.author AS "cookbookAuthor",
-      c.vector_score,
-      c.text_score,
-      c.combined_score
-    FROM combined c
-    JOIN "CookbookRecipe" cr ON cr.id = c.recipe_id
-    JOIN "Cookbook" cb ON cb.id = cr."cookbookId"
-    ORDER BY c.combined_score DESC
-    LIMIT ${limit}
-    `,
-    ...params,
-    query
-  );
+  // Hydrate the extra fields the MCP response shape promises but hybrid-search
+  // doesn't return (ingredients, instructions, pageNumber, servings, prepTime,
+  // cookTime, mealType). One query for the lot.
+  const ids = hybrid.map((h) => h.id);
+  const extras = ids.length
+    ? await prisma.cookbookRecipe.findMany({
+        where: { id: { in: ids } },
+        select: {
+          id: true,
+          ingredients: true,
+          instructions: true,
+          pageNumber: true,
+          mealType: true,
+          servings: true,
+          prepTime: true,
+          cookTime: true,
+        },
+      })
+    : [];
+  const byId = new Map(extras.map((e) => [e.id, e]));
 
   return {
-    results: results.map((r) => ({
-      recipe: {
-        id: r.id,
-        cookbookId: r.cookbookId,
-        title: r.title,
-        description: r.description,
-        ingredients: r.ingredients,
-        instructions: r.instructions,
-        pageNumber: r.pageNumber,
-        cuisineType: r.cuisineType,
-        mealType: r.mealType,
-        servings: r.servings,
-        prepTime: r.prepTime,
-        cookTime: r.cookTime,
-        cookbook: { title: r.cookbookTitle, author: r.cookbookAuthor },
-      },
-      score: r.combined_score,
-      matchType:
-        r.vector_score > 0 && r.text_score > 0
-          ? ("hybrid" as const)
-          : r.vector_score > 0
-            ? ("semantic" as const)
-            : ("fulltext" as const),
-    })),
-    totalCount: results.length,
+    results: hybrid.map((h) => {
+      const extra = byId.get(h.id);
+      return {
+        recipe: {
+          id: h.id,
+          cookbookId: h.cookbookId,
+          title: h.title,
+          description: h.description,
+          ingredients: extra?.ingredients ?? null,
+          instructions: extra?.instructions ?? null,
+          pageNumber: extra?.pageNumber ?? null,
+          cuisineType: h.cuisineType,
+          mealType: extra?.mealType ?? null,
+          servings: extra?.servings ?? null,
+          prepTime: extra?.prepTime ?? null,
+          cookTime: extra?.cookTime ?? null,
+          cookbook: { title: h.cookbookTitle, author: h.cookbookAuthor },
+        },
+        score: h.finalScore,
+        // RRF doesn't separate arms, so we label everything hybrid. Downstream
+        // callers that branched on matchType will just see "hybrid" going forward.
+        matchType: "hybrid" as const,
+      };
+    }),
+    totalCount: hybrid.length,
   };
 }
 

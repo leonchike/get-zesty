@@ -148,3 +148,40 @@ export interface CookbookSearchResponse {
   }>;
   totalCount: number;
 }
+
+// Inventory types
+export interface InventoryLocation {
+  id: string;
+  name: string;
+  emoji: string | null;
+  sortOrder: number;
+  isUserCreated: boolean;
+  userId: string | null;
+}
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  quantity: number | null;
+  quantityUnit: string | null;
+  notes: string | null;
+  status: "ACTIVE" | "CONSUMED" | "DISCARDED";
+  addedAt: string;
+  expiresAt: string | null;
+  locationId: string;
+  recipeId: string | null;
+  location: InventoryLocation;
+  recipe: { title: string } | null;
+}
+
+export interface InventoryListResponse {
+  inventory: InventoryItem[];
+}
+
+export interface InventoryItemResponse {
+  inventory: InventoryItem;
+}
+
+export interface InventoryLocationsResponse {
+  locations: InventoryLocation[];
+}
