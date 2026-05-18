@@ -83,6 +83,8 @@ export interface GroceryItem {
   section: { name: string } | null;
   recipe: { title: string } | null;
   recipeId: string | null;
+  cookbookRecipe: { title: string } | null;
+  cookbookRecipeId: string | null;
 }
 
 export interface GroceryListResponse {
@@ -170,8 +172,10 @@ export interface InventoryItem {
   expiresAt: string | null;
   locationId: string;
   recipeId: string | null;
+  cookbookRecipeId: string | null;
   location: InventoryLocation;
   recipe: { title: string } | null;
+  cookbookRecipe: { title: string } | null;
 }
 
 export interface InventoryListResponse {

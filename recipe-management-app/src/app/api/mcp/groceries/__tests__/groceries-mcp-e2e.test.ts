@@ -156,6 +156,71 @@ describeE2E("MCP Grocery API — E2E", () => {
 
       expect(response.status).toBe(400);
     });
+
+    it("links a cookbook recipe id to cookbookRecipeId, not recipeId", async () => {
+      // Find a real cookbook recipe for this user.
+      const cookbooksRes = await fetch(
+        `${API_BASE}/api/mcp/cookbooks?user_id=${USER_ID}`,
+        { method: "GET", headers: headers() }
+      );
+      const cookbooks = await cookbooksRes.json();
+      const cookbookId = Array.isArray(cookbooks) ? cookbooks[0]?.id : undefined;
+      if (!cookbookId) {
+        console.warn("No cookbooks for user — skipping cookbook link test");
+        return;
+      }
+
+      const recipesRes = await fetch(
+        `${API_BASE}/api/mcp/cookbooks/recipes/list?user_id=${USER_ID}&cookbook_id=${cookbookId}&limit=1`,
+        { method: "GET", headers: headers() }
+      );
+      const recipesData = await recipesRes.json();
+      const cookbookRecipeId = recipesData.recipes?.[0]?.id;
+      if (!cookbookRecipeId) {
+        console.warn("No cookbook recipes — skipping cookbook link test");
+        return;
+      }
+
+      const response = await fetch(`${API_BASE}/api/mcp/groceries`, {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({
+          user_id: USER_ID,
+          item: {
+            name: "E2E Test — Cookbook Linked Item",
+            recipeId: cookbookRecipeId,
+          },
+        }),
+      });
+
+      expect(response.ok).toBe(true);
+      const data = await response.json();
+      expect(data.grocery.cookbookRecipeId).toBe(cookbookRecipeId);
+      expect(data.grocery.recipeId).toBeNull();
+
+      createdItemIds.push(data.grocery.id);
+    });
+
+    it("ignores an unknown recipeId instead of erroring", async () => {
+      const response = await fetch(`${API_BASE}/api/mcp/groceries`, {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({
+          user_id: USER_ID,
+          item: {
+            name: "E2E Test — Bogus Recipe Link",
+            recipeId: "definitely-not-a-real-recipe-id",
+          },
+        }),
+      });
+
+      expect(response.ok).toBe(true);
+      const data = await response.json();
+      expect(data.grocery.recipeId).toBeNull();
+      expect(data.grocery.cookbookRecipeId).toBeNull();
+
+      createdItemIds.push(data.grocery.id);
+    });
   });
 
   describe("PATCH /api/mcp/groceries (update item)", () => {

@@ -27,7 +27,12 @@ const AddGroceryItemSchema = {
     .string()
     .optional()
     .describe('Unit of measurement (e.g., "lbs", "cups", "pieces")'),
-  recipeId: z.string().optional().describe("Associated recipe ID if item is from a recipe"),
+  recipeId: z
+    .string()
+    .optional()
+    .describe(
+      "Associated recipe ID if item is from a recipe — accepts either a personal recipe or a cookbook recipe ID"
+    ),
 };
 
 const AddMultipleGroceryItemsSchema = {
@@ -37,7 +42,10 @@ const AddMultipleGroceryItemsSchema = {
         name: z.string().describe("Item name (required)"),
         quantity: z.number().optional().describe("Quantity as number"),
         quantityUnit: z.string().optional().describe("Unit of measurement"),
-        recipeId: z.string().optional().describe("Associated recipe ID"),
+        recipeId: z
+          .string()
+          .optional()
+          .describe("Associated recipe ID (personal or cookbook recipe)"),
       })
     )
     .min(1)
@@ -120,7 +128,8 @@ export function registerGroceryTools(
               if (item.quantityUnit) text += ` ${item.quantityUnit}`;
               text += ")";
             }
-            if (item.recipe?.title) text += ` — *from ${item.recipe.title}*`;
+            const recipeTitle = item.recipe?.title ?? item.cookbookRecipe?.title;
+            if (recipeTitle) text += ` — *from ${recipeTitle}*`;
             text += ` \`${item.id}\`\n`;
           }
           text += "\n";

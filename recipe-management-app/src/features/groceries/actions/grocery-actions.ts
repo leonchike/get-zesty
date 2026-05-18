@@ -5,6 +5,7 @@ import { getUser, redirectToLogin } from "@/lib/actions/auth-actions";
 import { classifyItemWithAI } from "@/lib/functions/ai-grocery-classification";
 import { getUserIdFromJwt } from "@/lib/helpers/get-user-id-from-jwt";
 import { withTimeout } from "@/lib/functions/with-timeout";
+import { resolveRecipeLink } from "@/lib/helpers/resolve-recipe-link";
 /**
  * Retrieves the grocery items for the authenticated user.
  *
@@ -40,6 +41,7 @@ export async function getUserGroceriesBase(userId: string) {
       include: {
         section: true,
         recipe: true,
+        cookbookRecipe: true,
       },
       orderBy: {
         createdAt: "desc",
@@ -163,16 +165,21 @@ export async function createGroceryItem(
       sectionId = commonItem.sectionId || undefined;
     }
 
+    // A recipeId may belong to a personal recipe or a cookbook recipe —
+    // route it to the matching foreign key.
+    const recipeLink = await resolveRecipeLink(item.recipeId, userId);
+
     // Prepare the data for creation
+    const { recipeId: _ignoredRecipeId, ...itemFields } = item;
     const itemData = {
-      ...item,
+      ...itemFields,
       userId,
       status: "ACTIVE" as const,
       sectionId: sectionId,
       commonItemId: commonItem?.id,
       quantity: item.quantity !== undefined ? item.quantity : null,
       quantityUnit: item.quantityUnit || null,
-      recipeId: item.recipeId || null,
+      ...recipeLink,
     };
 
     // Create the new grocery item
@@ -181,13 +188,16 @@ export async function createGroceryItem(
       include: {
         section: true,
         recipe: true,
+        cookbookRecipe: true,
       },
     });
 
     return newGroceryItem;
   } catch (error) {
     console.error("Error creating grocery item:", error);
-    throw new Error("Failed to create grocery item");
+    throw new Error(
+      error instanceof Error ? error.message : "Failed to create grocery item"
+    );
   }
 }
 

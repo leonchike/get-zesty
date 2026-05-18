@@ -6,6 +6,7 @@ import { getUser, redirectToLogin } from "@/lib/actions/auth-actions";
 import { classifyInventoryWithAI } from "@/lib/functions/ai-inventory-classification";
 import { withTimeout } from "@/lib/functions/with-timeout";
 import { FALLBACK_LOCATION_NAME } from "@/features/inventory/constants/inventory-defaults";
+import { resolveRecipeLink } from "@/lib/helpers/resolve-recipe-link";
 import type {
   CreateInventoryItemInput,
   InventoryFilter,
@@ -15,6 +16,7 @@ import type {
 const INVENTORY_INCLUDE = {
   location: true,
   recipe: true,
+  cookbookRecipe: true,
 } as const;
 
 export async function getUserInventoryBase(
@@ -167,13 +169,15 @@ export async function createInventoryItem(
       expiresAt.setDate(expiresAt.getDate() + suggestedShelfLifeDays);
     }
 
+    const recipeLink = await resolveRecipeLink(input.recipeId, userId);
+
     const item = await prisma.inventoryItem.create({
       data: {
         name: input.name.trim(),
         quantity: input.quantity ?? null,
         quantityUnit: input.quantityUnit ?? null,
         notes: input.notes ?? null,
-        recipeId: input.recipeId ?? null,
+        ...recipeLink,
         locationId,
         userId,
         expiresAt,

@@ -57,9 +57,9 @@ export default function InventoryItem({ item }: Props) {
               </div>
             </div>
             <div className="flex items-center gap-2 mt-0.5">
-              {item.recipe?.title && (
+              {(item.recipe?.title ?? item.cookbookRecipe?.title) && (
                 <span className="text-xs text-muted-foreground italic">
-                  from {item.recipe.title}
+                  from {item.recipe?.title ?? item.cookbookRecipe?.title}
                 </span>
               )}
               {item.notes && (

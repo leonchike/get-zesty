@@ -62,7 +62,7 @@ const AddInventoryItemSchema = {
     .string()
     .optional()
     .describe(
-      "Optional Recipe ID — useful when logging leftovers from a recipe the user cooked."
+      "Optional Recipe ID — useful when logging leftovers from a recipe the user cooked. Accepts either a personal recipe or a cookbook recipe ID."
     ),
   notes: z
     .string()
@@ -155,7 +155,8 @@ function formatItemLine(item: InventoryItem, opts: { showLocation?: boolean } = 
   const qty = item.quantity
     ? ` (${item.quantity}${item.quantityUnit ? ` ${item.quantityUnit}` : ""})`
     : "";
-  const recipe = item.recipe?.title ? ` — *from ${item.recipe.title}*` : "";
+  const recipeTitle = item.recipe?.title ?? item.cookbookRecipe?.title;
+  const recipe = recipeTitle ? ` — *from ${recipeTitle}*` : "";
   const expiry = formatExpiryBadge(item.expiresAt);
   const location = opts.showLocation
     ? ` _(in ${item.location?.name ?? "Unknown"})_`
@@ -297,7 +298,8 @@ export function registerInventoryTools(
             `- **Expires**: ${new Date(item.expiresAt).toISOString().slice(0, 10)}${days !== null ? ` (in ${days} day${days === 1 ? "" : "s"})` : ""}`
           );
         }
-        if (item.recipe?.title) lines.push(`- **From recipe**: ${item.recipe.title}`);
+        const fromRecipe = item.recipe?.title ?? item.cookbookRecipe?.title;
+        if (fromRecipe) lines.push(`- **From recipe**: ${fromRecipe}`);
         lines.push(`- **ID**: \`${item.id}\``);
 
         return { content: [{ type: "text", text: lines.join("\n") }] };

@@ -64,7 +64,7 @@ export default function GroceryItem({
             </div>
             <div>
               <span className="text-sm text-muted-foreground">
-                {item.recipe?.title}
+                {item.recipe?.title ?? item.cookbookRecipe?.title}
               </span>
             </div>
           </div>

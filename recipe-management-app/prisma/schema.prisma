@@ -81,11 +81,13 @@ model GroceryItem {
   sectionId    String?
   commonItemId String?
   recipeId     String?
+  cookbookRecipeId String?
   status       GroceryItemStatus  @default(ACTIVE)
   user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   section      GrocerySection?    @relation(fields: [sectionId], references: [id])
   commonItem   CommonGroceryItem? @relation(fields: [commonItemId], references: [id])
   recipe       Recipe?            @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+  cookbookRecipe CookbookRecipe?  @relation(fields: [cookbookRecipeId], references: [id], onDelete: SetNull)
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
@@ -136,6 +138,9 @@ model InventoryItem {
 
   recipeId     String?
   recipe       Recipe?             @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+
+  cookbookRecipeId String?
+  cookbookRecipe   CookbookRecipe? @relation(fields: [cookbookRecipeId], references: [id], onDelete: SetNull)
 
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
@@ -287,6 +292,8 @@ model CookbookRecipe {
   cookbook      Cookbook       @relation(fields: [cookbookId], references: [id], onDelete: Cascade)
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   chunks       RecipeChunk[]
+  GroceryItem    GroceryItem[]
+  inventoryItems InventoryItem[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 

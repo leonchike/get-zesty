@@ -1,8 +1,14 @@
-import type { InventoryItem, InventoryLocation, Recipe } from "@prisma/client";
+import type {
+  InventoryItem,
+  InventoryLocation,
+  Recipe,
+  CookbookRecipe,
+} from "@prisma/client";
 
 export type InventoryItemWithRelations = InventoryItem & {
   location: InventoryLocation;
   recipe: Recipe | null;
+  cookbookRecipe: CookbookRecipe | null;
 };
 
 export type InventoryStatus = "ACTIVE" | "CONSUMED" | "DISCARDED";

@@ -21,6 +21,10 @@ export interface GroceryItemWithSection extends GroceryItem {
     title: string;
     id: string;
   } | null;
+  cookbookRecipe?: {
+    title: string;
+    id: string;
+  } | null;
 }
 
 export interface CreateGroceryItemInput {
