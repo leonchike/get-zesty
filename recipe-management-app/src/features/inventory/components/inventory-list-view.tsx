@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import clsx from "clsx";
 import { m, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useInventoryListLogic } from "@/features/inventory/hooks/useInventoryListLogic";
@@ -11,10 +12,19 @@ import InventorySearchInput from "@/features/inventory/components/inventory-sear
 import type { InventoryItemWithRelations } from "@/features/inventory/types";
 
 export default function InventoryListView() {
-  const { sortBy, setSortBy, searchQuery } = useInventoryStore();
+  const {
+    sortBy,
+    setSortBy,
+    expiryFilter,
+    setExpiryFilter,
+    searchQuery,
+  } = useInventoryStore();
   const { isLoading, error, groups, consumed, discarded, expiringSoonCount } =
     useInventoryListLogic();
   const isSearching = searchQuery.trim().length > 0;
+  const isExpiringOnly = expiryFilter === "expiring";
+  const toggleExpiringOnly = () =>
+    setExpiryFilter(isExpiringOnly ? "all" : "expiring");
 
   if (error) {
     return (
@@ -26,7 +36,33 @@ export default function InventoryListView() {
     <div className="py-6 space-y-4">
       <InventorySearchInput />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <LocationFilterTabs />
+        <div className="flex flex-wrap items-center gap-2">
+          <LocationFilterTabs />
+          <button
+            type="button"
+            onClick={toggleExpiringOnly}
+            aria-pressed={isExpiringOnly}
+            className={clsx(
+              "px-3 py-1.5 rounded-full text-sm font-medium border transition-all",
+              isExpiringOnly
+                ? "bg-accent text-accent-foreground border-accent"
+                : "bg-surface text-muted-foreground border-border hover:border-accent/50 hover:text-foreground"
+            )}
+          >
+            <span className="mr-1">⏰</span>
+            Expiring soon
+            {expiringSoonCount > 0 && (
+              <span
+                className={clsx(
+                  "ml-1.5 text-xs",
+                  isExpiringOnly ? "opacity-90" : "text-accent"
+                )}
+              >
+                {expiringSoonCount}
+              </span>
+            )}
+          </button>
+        </div>
         <div className="flex items-center gap-2 text-xs">
           <span className="text-muted-foreground">Sort:</span>
           {(["location", "expiry", "name"] as const).map((opt) => (
@@ -46,10 +82,28 @@ export default function InventoryListView() {
         </div>
       </div>
 
-      {expiringSoonCount > 0 && (
-        <div className="bg-accent/10 border border-accent/30 rounded-lg px-4 py-2 text-sm">
+      {expiringSoonCount > 0 && !isExpiringOnly && (
+        <button
+          type="button"
+          onClick={toggleExpiringOnly}
+          className="w-full text-left bg-accent/10 border border-accent/30 rounded-lg px-4 py-2 text-sm hover:bg-accent/15 transition-colors"
+        >
           <span className="font-medium">{expiringSoonCount} item(s)</span>
-          <span className="text-muted-foreground"> expiring within 3 days.</span>
+          <span className="text-muted-foreground">
+            {" "}expiring within 3 days. Click to filter.
+          </span>
+        </button>
+      )}
+
+      {!isLoading && isExpiringOnly && groups.length === 0 && !isSearching && (
+        <div className="bg-surface border border-border rounded-2xl p-8 text-center">
+          <div className="text-2xl mb-2">✨</div>
+          <div className="font-heading text-base text-foreground mb-1">
+            Nothing expiring soon
+          </div>
+          <p className="text-sm text-muted-foreground">
+            All your active items have more than 3 days left.
+          </p>
         </div>
       )}
 
@@ -59,7 +113,7 @@ export default function InventoryListView() {
         </div>
       )}
 
-      {!isLoading && groups.length === 0 && !isSearching && (
+      {!isLoading && groups.length === 0 && !isSearching && !isExpiringOnly && (
         <div className="bg-surface border border-border rounded-2xl p-10 text-center bg-grain">
           <div className="text-4xl mb-3">🧺</div>
           <div className="font-heading text-lg text-foreground mb-1">

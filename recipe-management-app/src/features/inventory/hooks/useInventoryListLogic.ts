@@ -19,8 +19,11 @@ export interface InventoryGroup {
   items: InventoryItemWithRelations[];
 }
 
+const EXPIRING_SOON_DAYS = 3;
+
 export function useInventoryListLogic() {
-  const { sortBy, locationFilter, searchQuery } = useInventoryStore();
+  const { sortBy, locationFilter, expiryFilter, searchQuery } =
+    useInventoryStore();
   const { data: items = [], isLoading, error } = useInventoryItemsQuery();
   const { data: locations = [] } = useInventoryLocationsQuery();
 
@@ -74,9 +77,22 @@ export function useInventoryListLogic() {
   );
 
   const filteredActive = useMemo(() => {
-    if (!locationFilter) return active;
-    return active.filter((i) => i.locationId === locationFilter);
-  }, [active, locationFilter]);
+    let arr = active;
+    if (locationFilter) {
+      arr = arr.filter((i) => i.locationId === locationFilter);
+    }
+    if (expiryFilter === "expiring") {
+      const now = Date.now();
+      arr = arr.filter((i) => {
+        if (!i.expiresAt) return false;
+        const diffDays = Math.ceil(
+          (new Date(i.expiresAt).getTime() - now) / (1000 * 60 * 60 * 24)
+        );
+        return diffDays <= EXPIRING_SOON_DAYS;
+      });
+    }
+    return arr;
+  }, [active, locationFilter, expiryFilter]);
 
   const sortedFiltered = useMemo(() => {
     const arr = [...filteredActive];
@@ -137,7 +153,7 @@ export function useInventoryListLogic() {
       const diffDays = Math.ceil(
         (new Date(i.expiresAt).getTime() - now) / (1000 * 60 * 60 * 24)
       );
-      return diffDays <= 3;
+      return diffDays <= EXPIRING_SOON_DAYS;
     }).length;
   }, [active]);
 
