@@ -113,6 +113,22 @@ export default function TabLayout() {
           ),
         }}
       />
+
+      <Tabs.Screen
+        name="tasks"
+        options={{
+          title: "Home Tasks",
+          headerShown: false,
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon
+              icon={icons.groceryIcon}
+              color={color}
+              name="Home Tasks"
+              focused={focused}
+            />
+          ),
+        }}
+      />
     </Tabs>
     <GlobalTimersIndicator />
     <FloatingPillNav />

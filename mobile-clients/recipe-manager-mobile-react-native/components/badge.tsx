@@ -19,6 +19,12 @@ const variantStyles = {
     container: "border-primary-dark/50 dark:border-primary-light/50",
     text: "text-primary-dark dark:text-primary-light",
   },
+  // Translucent glass chip (no per-badge blur — BlurViews are capped per screen)
+  glass: {
+    container:
+      "bg-white/60 dark:bg-white/10 border-white/40 dark:border-white/15",
+    text: "text-foreground-light dark:text-foreground-dark",
+  },
 };
 
 type BadgeProps = {

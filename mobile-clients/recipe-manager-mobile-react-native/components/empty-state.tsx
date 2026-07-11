@@ -19,6 +19,12 @@ const EMPTY_STATE_CONFIG = {
     description: "Create a shopping list to get started",
     emoji: "🛒",
   },
+  homeTasks: {
+    header: "Home Tasks",
+    description:
+      "Track chores, maintenance, and one-off jobs around the house",
+    emoji: "🏡",
+  },
   // Easy to add new types by adding new entries here
 } as const;
 

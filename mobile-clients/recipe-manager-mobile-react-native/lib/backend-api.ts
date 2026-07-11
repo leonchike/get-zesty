@@ -2,13 +2,21 @@ import axios from "axios";
 import { getEnv } from "@/lib/get-env";
 import { User } from "@/lib/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-// export const BACKEND_URL = getEnv("EXPO_PUBLIC_BACKEND_URL");
-export const BACKEND_URL_DEV = "http://192.168.1.184:3000"; // Leon's home IP
+import type {
+  CreateHomeTaskInput,
+  HomeTask,
+  HomeTaskView,
+  HouseholdMember,
+  UpdateHomeTaskInput,
+} from "@/features/home-tasks/types";
 
 export const BACKEND_URL_PROD = "https://www.getzesty.food"; // Production URL
 
-const BACKEND_URL = __DEV__ ? BACKEND_URL_PROD : BACKEND_URL_PROD;
+// In dev, EXPO_PUBLIC_BACKEND_URL (.env) points at the local Next.js server
+// (e.g. http://<LAN-IP>:3000); production builds always use the prod URL.
+const BACKEND_URL = __DEV__
+  ? getEnv("EXPO_PUBLIC_BACKEND_URL") || BACKEND_URL_PROD
+  : BACKEND_URL_PROD;
 
 const backendApi = axios.create({
   baseURL: BACKEND_URL,
@@ -55,6 +63,8 @@ export const ROUTES = {
   DEACTIVATE_ACCOUNT: "/api/mobile/user-deactivate",
   UPDATE_USER_PROFILE: "/api/mobile/user-profile-update",
   UPDATE_USER_PASSWORD: "/api/mobile/user-password-update",
+  HOME_TASKS: "/api/mobile/tasks",
+  HOUSEHOLD_MEMBERS: "/api/mobile/household-members",
 };
 
 interface AuthResponse {
@@ -242,6 +252,99 @@ export const getGrocerySections = async () => {
     return response.data;
   } catch (error) {
     console.error("Error fetching grocery sections:", error);
+    throw error;
+  }
+};
+
+/* ------------------------------ Home Tasks ------------------------------ */
+
+export const getHomeTasks = async (filter?: {
+  view?: HomeTaskView;
+  assigneeId?: string;
+}): Promise<HomeTask[]> => {
+  try {
+    const response = await backendApi.get(ROUTES.HOME_TASKS, {
+      params: {
+        ...(filter?.view && { view: filter.view }),
+        ...(filter?.assigneeId && { assignee_id: filter.assigneeId }),
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching home tasks:", error);
+    throw error;
+  }
+};
+
+export const createHomeTask = async (
+  input: CreateHomeTaskInput
+): Promise<HomeTask> => {
+  try {
+    const response = await backendApi.post(ROUTES.HOME_TASKS, input);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating home task:", error);
+    throw error;
+  }
+};
+
+export const updateHomeTask = async (
+  id: string,
+  input: UpdateHomeTaskInput
+): Promise<HomeTask> => {
+  try {
+    const response = await backendApi.patch(`${ROUTES.HOME_TASKS}/${id}`, input);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating home task:", error);
+    throw error;
+  }
+};
+
+export const deleteHomeTask = async (id: string) => {
+  try {
+    const response = await backendApi.delete(`${ROUTES.HOME_TASKS}/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting home task:", error);
+    throw error;
+  }
+};
+
+export const completeHomeTask = async (
+  id: string,
+  completedById?: string | null
+): Promise<HomeTask> => {
+  try {
+    const response = await backendApi.post(
+      `${ROUTES.HOME_TASKS}/${id}/complete`,
+      completedById ? { completedById } : {}
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error completing home task:", error);
+    throw error;
+  }
+};
+
+export const uncompleteHomeTask = async (id: string): Promise<HomeTask> => {
+  try {
+    const response = await backendApi.delete(
+      `${ROUTES.HOME_TASKS}/${id}/complete`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error undoing task completion:", error);
+    throw error;
+  }
+};
+
+export const getHouseholdMembers = async (): Promise<HouseholdMember[]> => {
+  try {
+    const response = await backendApi.get(ROUTES.HOUSEHOLD_MEMBERS);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching household members:", error);
     throw error;
   }
 };
