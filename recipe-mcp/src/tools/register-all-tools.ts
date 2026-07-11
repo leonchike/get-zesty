@@ -9,6 +9,7 @@ import { registerRecipeTools } from "./register-recipe-tools.js";
 import { registerGroceryTools } from "./register-grocery-tools.js";
 import { registerCookbookTools } from "./register-cookbook-tools.js";
 import { registerInventoryTools } from "./register-inventory-tools.js";
+import { registerHomeTaskTools } from "./register-home-task-tools.js";
 
 /**
  * Register all MCP tools (recipe, grocery, cookbook)
@@ -33,8 +34,11 @@ export function registerAllTools(server: McpServer, env: Env, props: Props): voi
   console.log("Grocery tools registered (6 tools)");
 
   registerCookbookTools(server, env, props, userId);
-  console.log("Cookbook tools registered (4 tools)");
+  console.log("Cookbook tools registered (5 tools)");
 
   registerInventoryTools(server, env, props, userId);
   console.log("Inventory tools registered (8 tools)");
+
+  registerHomeTaskTools(server, env, props, userId);
+  console.log("Home task tools registered (8 tools)");
 }

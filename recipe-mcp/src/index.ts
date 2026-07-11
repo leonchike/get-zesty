@@ -59,7 +59,7 @@ export class RecipeMCP extends McpAgent<Env, Record<string, never>, Props> {
     // Register all tools
     try {
       registerAllTools(this.server, this.env, this.props);
-      console.log("All tools registered successfully (15 tools)");
+      console.log("All tools registered successfully (32 tools)");
     } catch (error) {
       console.error("Failed to register tools:", error);
       Sentry.captureException(error);

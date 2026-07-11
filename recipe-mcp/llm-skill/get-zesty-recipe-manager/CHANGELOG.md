@@ -11,6 +11,19 @@ Version applies to the skill itself, not the underlying MCP server or web app. B
 
 ---
 
+## [1.1.0] — 2026-07-11
+
+Minor release: Home Tasks become the fifth data source — household chores and maintenance managed via 8 new MCP tools.
+
+### Added
+- **Home Task tools** documented: `getHomeTasks`, `createHomeTask`, `updateHomeTask`, `completeHomeTask`, `uncompleteHomeTask`, `deleteHomeTask`, `listHouseholdMembers`, `getHomeTaskHistory`.
+- **"Five Data Sources"** table (was Four) with the Home Tasks column: full CRUD on tasks; household members are read-only (managed in the web app settings).
+- **New workflows**: "What needs doing around the house?", "Marking a Chore Done" (with recurrence roll-forward reporting), "Creating / Assigning a Recurring Chore" (resolve member names via `listHouseholdMembers` first — never guess IDs), and "Who did X last? / Task History".
+- **Home Task Values** conventions: `view` semantics ("all" = pending), uppercase `intervalUnit` values, task status meanings, date formats.
+- **Behavior Notes**: recurrence anchors on the completion date (never "old due date + cadence"); `uncompleteHomeTask` as the undo; home tasks vs groceries disambiguation.
+- **Proactivity rows** for completed recurring chores (state the next due date), overdue lists, new tasks, and task history.
+- Frontmatter triggers for chores/home tasks ("add a chore", "what chores are due", "mark X as done", "remind me to change the filters every 3 months", "who did X last").
+
 ## [1.0.3] — 2026-05-12
 
 Patch release: improves discoverability of inventory tool parameters. No behavior change.
