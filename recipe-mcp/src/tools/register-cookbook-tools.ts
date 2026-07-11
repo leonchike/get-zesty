@@ -86,6 +86,11 @@ export function registerCookbookTools(
     "searchCookbookRecipes",
     "Semantic/RAG search across the user's digital cookbook library. Uses vector similarity and full-text search to find recipes matching natural language queries. Returns ranked results with relevance scores.",
     SearchCookbookRecipesSchema,
+    {
+      title: "Search Cookbooks",
+      readOnlyHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry(
       "searchCookbookRecipes",
       async ({ query, cookbookId, cuisineType, mealType, limit }) => {
@@ -129,6 +134,11 @@ export function registerCookbookTools(
     "getCookbookRecipe",
     "Get full details of a cookbook recipe by ID, including the source cookbook, page reference, ingredients, and instructions.",
     GetCookbookRecipeSchema,
+    {
+      title: "Get Cookbook Recipe",
+      readOnlyHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry("getCookbookRecipe", async ({ recipeId }) => {
       const r = await cookbookApi.getCookbookRecipe(apiConfig, recipeId);
 
@@ -168,6 +178,11 @@ export function registerCookbookTools(
     "listCookbooks",
     "List all cookbooks in the user's digital cookbook library with recipe counts.",
     ListCookbooksSchema,
+    {
+      title: "List Cookbooks",
+      readOnlyHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry("listCookbooks", async () => {
       const cookbooks = await cookbookApi.listCookbooks(apiConfig);
 
@@ -197,6 +212,11 @@ export function registerCookbookTools(
     "listCookbookRecipes",
     "List all recipes in a specific cookbook with pagination. Returns recipe summaries (title, description, page number, cuisine/meal type). Use this to browse a cookbook's contents before fetching full recipe details.",
     ListCookbookRecipesSchema,
+    {
+      title: "List Cookbook Recipes",
+      readOnlyHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry("listCookbookRecipes", async ({ cookbookId, page, limit }) => {
       const data = await cookbookApi.listCookbookRecipes(apiConfig, cookbookId, {
         page,
@@ -239,6 +259,11 @@ export function registerCookbookTools(
     "searchByIngredient",
     "Find cookbook recipes by ingredient list. Can match ANY of the listed ingredients (default) or require ALL of them. Useful for finding recipes based on what you have on hand.",
     SearchByIngredientSchema,
+    {
+      title: "Search by Ingredient",
+      readOnlyHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry("searchByIngredient", async ({ ingredients, matchAll }) => {
       const data = await cookbookApi.searchByIngredient(apiConfig, ingredients, matchAll);
 

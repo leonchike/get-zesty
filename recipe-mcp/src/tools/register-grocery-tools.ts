@@ -95,6 +95,11 @@ export function registerGroceryTools(
     "getGroceryList",
     "Get the user's grocery list organized by section. Shows active items by default; optionally includes completed items from the last 7 days.",
     GetGroceryListSchema,
+    {
+      title: "Get Grocery List",
+      readOnlyHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry("getGroceryList", async ({ includeCompleted }) => {
       const data = await groceryApi.getGroceryList(apiConfig, includeCompleted);
 
@@ -158,6 +163,13 @@ export function registerGroceryTools(
     "addGroceryItem",
     "Add a single item to the grocery list. Items are automatically classified into grocery sections (Produce, Dairy, Meat, etc.) using AI.",
     AddGroceryItemSchema,
+    {
+      title: "Add Grocery Item",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     wrapWithSentry("addGroceryItem", async ({ name, quantity, quantityUnit, recipeId }) => {
       const data = await groceryApi.addGroceryItem(apiConfig, {
         name,
@@ -185,6 +197,13 @@ export function registerGroceryTools(
     "addMultipleGroceryItems",
     "Bulk add 1-50 items to the grocery list. Each item is added individually with AI section classification. Returns a summary of successful and failed additions.",
     AddMultipleGroceryItemsSchema,
+    {
+      title: "Add Grocery Items",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     wrapWithSentry("addMultipleGroceryItems", async ({ items }) => {
       const results = await Promise.allSettled(
         items.map((item) =>
@@ -229,6 +248,13 @@ export function registerGroceryTools(
     "updateGroceryItem",
     "Update an existing grocery item. Only provided fields will be updated. Can change name, quantity, unit, or status.",
     UpdateGroceryItemSchema,
+    {
+      title: "Update Grocery Item",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry(
       "updateGroceryItem",
       async ({ itemId, name, quantity, quantityUnit, status }) => {
@@ -265,6 +291,13 @@ export function registerGroceryTools(
     "completeGroceryItems",
     "Batch mark one or more grocery items as completed. Pass an array of item IDs.",
     CompleteGroceryItemsSchema,
+    {
+      title: "Complete Grocery Items",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry("completeGroceryItems", async ({ itemIds }) => {
       const data = await groceryApi.completeGroceryItems(apiConfig, itemIds);
 
@@ -284,6 +317,13 @@ export function registerGroceryTools(
     "deleteGroceryItem",
     "Permanently delete a grocery item from the list. This action cannot be undone.",
     DeleteGroceryItemSchema,
+    {
+      title: "Delete Grocery Item",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry("deleteGroceryItem", async ({ itemId }) => {
       const data = await groceryApi.deleteGroceryItem(apiConfig, itemId);
 

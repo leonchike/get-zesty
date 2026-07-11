@@ -150,6 +150,11 @@ export function registerHomeTaskTools(
     "getHomeTasks",
     "List the user's household tasks (chores, maintenance, one-off jobs), sorted by due date with overdue tasks flagged. Use view='overdue' for what's late, 'dueSoon' for the coming week, 'completed' for finished one-offs. Each task line ends with its ID for use in other task tools.",
     GetHomeTasksSchema,
+    {
+      title: "Get Home Tasks",
+      readOnlyHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry("getHomeTasks", async ({ view, assigneeId, dueWithinDays }) => {
       const data = await homeTaskApi.getHomeTasks(apiConfig, {
         view,
@@ -226,6 +231,13 @@ export function registerHomeTaskTools(
     "createHomeTask",
     "Create a household task: a one-off job (e.g. 'paint the fence') or a recurring chore (e.g. 'clean HVAC filters every 3 months' — set isRecurring with intervalValue + intervalUnit). To assign it, resolve the member's ID with listHouseholdMembers first.",
     CreateHomeTaskSchema,
+    {
+      title: "Create Home Task",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     wrapWithSentry("createHomeTask", async (input) => {
       const data = await homeTaskApi.createHomeTask(apiConfig, input);
       const task = data.task;
@@ -247,6 +259,13 @@ export function registerHomeTaskTools(
     "updateHomeTask",
     "Update a task's details, due date, recurrence, or assignee. Only the fields you provide are changed. Set isRecurring=false to stop a chore from repeating. Get the taskId from getHomeTasks.",
     UpdateHomeTaskSchema,
+    {
+      title: "Update Home Task",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry("updateHomeTask", async ({ taskId, ...fields }) => {
       const data = await homeTaskApi.updateHomeTask(apiConfig, {
         id: taskId,
@@ -270,6 +289,13 @@ export function registerHomeTaskTools(
     "completeHomeTask",
     "Mark a household task as done. Recurring tasks are never closed — completing one automatically schedules the next occurrence (due date = today + cadence) and the response states the new date. One-off tasks move to completed. Optionally record who did it via completedById.",
     CompleteHomeTaskSchema,
+    {
+      title: "Complete Home Task",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     wrapWithSentry("completeHomeTask", async ({ taskId, completedById }) => {
       const data = await homeTaskApi.completeHomeTask(
         apiConfig,
@@ -298,6 +324,13 @@ export function registerHomeTaskTools(
     "uncompleteHomeTask",
     "Undo a task's most recent completion: removes the completion record and restores the due date and status the task had before it was completed.",
     TaskIdOnlySchema,
+    {
+      title: "Undo Task Completion",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     wrapWithSentry("uncompleteHomeTask", async ({ taskId }) => {
       const data = await homeTaskApi.uncompleteHomeTask(apiConfig, taskId);
       const task = data.task;
@@ -316,6 +349,13 @@ export function registerHomeTaskTools(
     "deleteHomeTask",
     "Permanently delete a household task and its completion history. Cannot be undone — to keep the history, complete the task or set isRecurring=false instead.",
     TaskIdOnlySchema,
+    {
+      title: "Delete Home Task",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry("deleteHomeTask", async ({ taskId }) => {
       await homeTaskApi.deleteHomeTask(apiConfig, taskId);
 
@@ -335,6 +375,11 @@ export function registerHomeTaskTools(
     "listHouseholdMembers",
     "List the household members tasks can be assigned to, with their IDs. Use this to resolve a name (e.g. 'assign it to Ada') to an assigneeId or completedById — never guess member IDs. Members are managed in the Get Zesty web app settings (read-only here).",
     {},
+    {
+      title: "List Household Members",
+      readOnlyHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry("listHouseholdMembers", async () => {
       const data = await homeTaskApi.getHouseholdMembers(apiConfig);
       const members = data.members || [];
@@ -364,6 +409,11 @@ export function registerHomeTaskTools(
     "getHomeTaskHistory",
     "Show the completion log for a task — every time it was done, when, and by whom. Useful for questions like 'when did we last change the filters?' or 'who cleaned the bathroom last?'. Get the taskId from getHomeTasks.",
     TaskIdOnlySchema,
+    {
+      title: "Get Task History",
+      readOnlyHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry("getHomeTaskHistory", async ({ taskId }) => {
       const data = await homeTaskApi.getTaskCompletions(apiConfig, taskId);
       const completions = data.completions || [];

@@ -114,6 +114,11 @@ export function registerRecipeTools(
     "searchRecipes",
     "Search and filter recipes in the recipe database. Supports text search, cuisine/meal type filters, favorites, pinned recipes, and pagination. Returns recipe summaries (not full details — use getRecipe for that).",
     SearchRecipesSchema,
+    {
+      title: "Search Personal Recipes",
+      readOnlyHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry(
       "searchRecipes",
       async ({
@@ -174,6 +179,11 @@ export function registerRecipeTools(
     "getRecipe",
     "Get full recipe details by ID, including ingredients, instructions, nutrition, and metadata.",
     GetRecipeSchema,
+    {
+      title: "Get Recipe Details",
+      readOnlyHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry("getRecipe", async ({ recipeId }) => {
       const r = await recipeApi.getRecipe(apiConfig, recipeId);
 
@@ -216,6 +226,13 @@ export function registerRecipeTools(
     "createRecipe",
     "Create a new recipe with title, ingredients, and instructions. Optionally uses AI to parse ingredients and instructions into structured format.",
     CreateRecipeSchema,
+    {
+      title: "Save New Recipe",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     wrapWithSentry(
       "createRecipe",
       async ({
@@ -267,6 +284,13 @@ export function registerRecipeTools(
     "updateRecipe",
     "Update an existing recipe. Only provided fields will be updated. Use getRecipe first to see current values.",
     UpdateRecipeSchema,
+    {
+      title: "Update Recipe",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry(
       "updateRecipe",
       async ({
@@ -317,6 +341,13 @@ export function registerRecipeTools(
     "deleteRecipe",
     "Soft-delete a recipe. The recipe is marked as deleted but not permanently removed from the database.",
     DeleteRecipeSchema,
+    {
+      title: "Delete Recipe",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry("deleteRecipe", async ({ recipeId }) => {
       const data = await recipeApi.deleteRecipe(apiConfig, recipeId);
 

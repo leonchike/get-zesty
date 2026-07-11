@@ -197,6 +197,11 @@ export function registerInventoryTools(
     "getInventory",
     "Get the user's kitchen inventory grouped by location (Pantry, Fridge, Freezer, etc.). Shows active items by default with expiry indicators. Useful for 'what's in my fridge?' and similar questions. Pass `nameContains` to search items by name substring (e.g. 'parmesan').",
     GetInventorySchema,
+    {
+      title: "Get Kitchen Inventory",
+      readOnlyHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry(
       "getInventory",
       async ({ locationName, status, expiringWithinDays, nameContains }) => {
@@ -271,6 +276,13 @@ export function registerInventoryTools(
     "addInventoryItem",
     "Add a single item to the kitchen inventory. If locationName is omitted, an AI classifier picks the best storage location (Pantry/Spices/Fridge/Freezer/Counter) and may suggest an expiry date based on typical shelf life.",
     AddInventoryItemSchema,
+    {
+      title: "Add Inventory Item",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     wrapWithSentry(
       "addInventoryItem",
       async ({ name, quantity, quantityUnit, locationName, expiresAt, recipeId, notes }) => {
@@ -311,6 +323,13 @@ export function registerInventoryTools(
     "addMultipleInventoryItems",
     "Bulk add 1-50 inventory items. Each is added individually with AI-assisted classification when location is omitted.",
     AddMultipleInventoryItemsSchema,
+    {
+      title: "Add Inventory Items",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     wrapWithSentry("addMultipleInventoryItems", async ({ items }) => {
       const locationCache = new Map<string, string>();
       const resolveCached = async (name?: string): Promise<string | undefined> => {
@@ -363,6 +382,13 @@ export function registerInventoryTools(
     "updateInventoryItem",
     "Update fields on an existing inventory item: name, quantity, unit, location, expiry, notes, or status. Only provided fields change.",
     UpdateInventoryItemSchema,
+    {
+      title: "Update Inventory Item",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry(
       "updateInventoryItem",
       async ({ itemId, name, quantity, quantityUnit, locationName, expiresAt, notes, status }) => {
@@ -406,6 +432,13 @@ export function registerInventoryTools(
     "consumeInventoryItem",
     "Mark an inventory item as used. If the item has a quantity > decrement, the quantity is reduced. Otherwise, the item's status is set to CONSUMED. Use this when the user finishes off an item.",
     ConsumeInventoryItemSchema,
+    {
+      title: "Consume Inventory Item",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
     wrapWithSentry("consumeInventoryItem", async ({ itemId, decrement }) => {
       const data = await inventoryApi.consumeInventoryItem(apiConfig, itemId, decrement);
       const item = data.inventory;
@@ -421,6 +454,13 @@ export function registerInventoryTools(
     "discardInventoryItem",
     "Mark an inventory item as thrown out (DISCARDED). Use this when something was wasted rather than eaten — useful for waste tracking later.",
     DiscardInventoryItemSchema,
+    {
+      title: "Discard Inventory Item",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry("discardInventoryItem", async ({ itemId }) => {
       const data = await inventoryApi.discardInventoryItem(apiConfig, itemId);
       const item = data.inventory;
@@ -439,6 +479,13 @@ export function registerInventoryTools(
     "deleteInventoryItem",
     "Permanently delete an inventory item record. Prefer consumeInventoryItem or discardInventoryItem unless the entry was created in error.",
     DeleteInventoryItemSchema,
+    {
+      title: "Delete Inventory Item",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry("deleteInventoryItem", async ({ itemId }) => {
       const data = await inventoryApi.deleteInventoryItem(apiConfig, itemId);
       return {
@@ -456,6 +503,11 @@ export function registerInventoryTools(
     "listExpiringSoon",
     "Return inventory items expiring within N days (default 3), sorted by soonest expiry. Useful for 'what should I cook before it goes bad?'.",
     ListExpiringSoonSchema,
+    {
+      title: "List Expiring Items",
+      readOnlyHint: true,
+      openWorldHint: false,
+    },
     wrapWithSentry("listExpiringSoon", async ({ withinDays }) => {
       const data = await inventoryApi.getInventoryList(apiConfig, {
         status: "ACTIVE",
