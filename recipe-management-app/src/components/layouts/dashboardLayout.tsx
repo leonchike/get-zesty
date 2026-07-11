@@ -24,7 +24,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
       <div className="fixed top-0 left-0 w-full h-[2px] bg-gradient-to-r from-primary via-accent to-primary z-[60]" />
 
       {/* Header */}
-      <header className="px-4 md:px-6 py-2 md:py-4 flex items-center justify-between fixed top-[2px] left-0 w-full z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
+      <header className="px-4 md:px-6 py-2 md:py-4 flex items-center justify-between fixed top-[2px] left-0 w-full z-50 glass-strong rounded-none border-x-0 border-t-0 border-b border-border/50">
         <div className="flex items-center">
           {user && (
             <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
@@ -35,7 +35,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
               </SheetTrigger>
               <SheetContent
                 side="left"
-                className="w-[250px] sm:w-[300px] px-2 bg-sidebar-bg rounded-tr-3xl rounded-br-3xl outline-none border-none"
+                className="w-[250px] sm:w-[300px] px-2 rounded-tr-3xl rounded-br-3xl outline-none"
               >
                 <SidebarContent isMobile={true} closeSheet={closeSheet} />
               </SheetContent>
@@ -59,7 +59,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
       <div className="flex flex-col md:flex-row pt-[50px] lg:pt-[66px]">
         {/* Sidebar for tablet and larger screens */}
         {user && (
-          <aside className="hidden md:block w-52 lg:w-64 2xl:w-72 border-r border-border/50 h-[calc(100vh-66px)] overflow-y-auto fixed top-[66px] left-0 bg-sidebar-bg">
+          <aside className="hidden md:block w-52 lg:w-64 2xl:w-72 h-[calc(100vh-66px)] overflow-y-auto fixed top-[66px] left-0 glass-strong rounded-none border-y-0 border-l-0 border-r border-border/50">
             <SidebarContent isMobile={false} />
           </aside>
         )}

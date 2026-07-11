@@ -42,7 +42,7 @@ export default function RecipeCard({ recipe }: { recipe: Recipe }) {
               </div>
             )}
             {totalTime && (
-              <span className="absolute top-2 left-2 bg-accent/90 backdrop-blur-sm rounded-full px-3 py-1 text-sm font-semibold text-white">
+              <span className="absolute top-2 left-2 glass rounded-full px-3 py-1 text-sm font-semibold text-foreground">
                 {humanReadableTime(totalTime)}
               </span>
             )}

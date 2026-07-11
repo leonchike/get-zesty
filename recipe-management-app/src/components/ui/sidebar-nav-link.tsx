@@ -33,7 +33,7 @@ export default function NavLink({
           "flex items-center p-2 pl-4 rounded-lg transition-all duration-200",
           "hover:bg-primary/5",
           {
-            "text-primary font-medium bg-primary/5": isActive,
+            "text-primary font-medium glass rounded-full": isActive,
             "text-muted-foreground": !isActive,
           },
           className

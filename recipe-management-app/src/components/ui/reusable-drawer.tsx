@@ -34,7 +34,7 @@ export function ReusableDrawer({
       {/* <DrawerTrigger>
         <FilterButton />
       </DrawerTrigger> */}
-      <DrawerContent className="bg-pageBg-light dark:bg-pageBg-dark border-none shadow-none rounded-t-[2rem]">
+      <DrawerContent className="rounded-t-[2rem]">
         <DrawerHeader>
           {title && <DrawerTitle>{title}</DrawerTitle>}
           {description && <DrawerDescription>{description}</DrawerDescription>}

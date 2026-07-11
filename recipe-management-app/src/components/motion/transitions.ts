@@ -75,6 +75,22 @@ export const slideRight: Variants = {
   exit: { opacity: 0, x: 50, transition: { duration: 0.2 } },
 };
 
+export const glassIn: Variants = {
+  hidden: { opacity: 0, scale: 0.97, filter: "blur(4px)" },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    filter: "blur(0px)",
+    transition: easeSoft,
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.97,
+    filter: "blur(4px)",
+    transition: { duration: 0.15 },
+  },
+};
+
 export const cardHover: Variants = {
   rest: { scale: 1, y: 0 },
   hover: {

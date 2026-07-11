@@ -46,7 +46,7 @@ export default function InventoryListView() {
               "px-3 py-1.5 rounded-full text-sm font-medium border transition-all",
               isExpiringOnly
                 ? "bg-accent text-accent-foreground border-accent"
-                : "bg-surface text-muted-foreground border-border hover:border-accent/50 hover:text-foreground"
+                : "glass text-muted-foreground hover:border-accent/50 hover:text-foreground"
             )}
           >
             <span className="mr-1">⏰</span>
@@ -86,7 +86,7 @@ export default function InventoryListView() {
         <button
           type="button"
           onClick={toggleExpiringOnly}
-          className="w-full text-left bg-accent/10 border border-accent/30 rounded-lg px-4 py-2 text-sm hover:bg-accent/15 transition-colors"
+          className="w-full text-left glass border-accent/30 rounded-lg px-4 py-2 text-sm hover:border-accent/60 transition-colors"
         >
           <span className="font-medium">{expiringSoonCount} item(s)</span>
           <span className="text-muted-foreground">
@@ -96,7 +96,7 @@ export default function InventoryListView() {
       )}
 
       {!isLoading && isExpiringOnly && groups.length === 0 && !isSearching && (
-        <div className="bg-surface border border-border rounded-2xl p-8 text-center">
+        <div className="glass rounded-2xl p-8 text-center">
           <div className="text-2xl mb-2">✨</div>
           <div className="font-heading text-base text-foreground mb-1">
             Nothing expiring soon
@@ -114,7 +114,7 @@ export default function InventoryListView() {
       )}
 
       {!isLoading && groups.length === 0 && !isSearching && !isExpiringOnly && (
-        <div className="bg-surface border border-border rounded-2xl p-10 text-center bg-grain">
+        <div className="glass rounded-2xl p-10 text-center bg-grain">
           <div className="text-4xl mb-3">🧺</div>
           <div className="font-heading text-lg text-foreground mb-1">
             Nothing in your kitchen yet
@@ -126,7 +126,7 @@ export default function InventoryListView() {
       )}
 
       {!isLoading && groups.length === 0 && isSearching && (
-        <div className="bg-surface border border-border rounded-2xl p-8 text-center">
+        <div className="glass rounded-2xl p-8 text-center">
           <div className="text-2xl mb-2">🔍</div>
           <div className="font-heading text-base text-foreground mb-1">
             No matches for &ldquo;{searchQuery}&rdquo;
