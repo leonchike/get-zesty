@@ -189,3 +189,53 @@ export interface InventoryItemResponse {
 export interface InventoryLocationsResponse {
   locations: InventoryLocation[];
 }
+
+// Home Task types
+export interface HouseholdMember {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface HomeTask {
+  id: string;
+  title: string;
+  notes: string | null;
+  category: string | null;
+  status: "ACTIVE" | "COMPLETED" | "ARCHIVED";
+  dueDate: string | null;
+  isRecurring: boolean;
+  intervalValue: number | null;
+  intervalUnit: "DAY" | "WEEK" | "MONTH" | "YEAR" | null;
+  lastCompletedAt: string | null;
+  assigneeId: string | null;
+  assignee: HouseholdMember | null;
+}
+
+export interface TaskCompletionEntry {
+  id: string;
+  completedAt: string;
+  previousDueDate: string | null;
+  completedBy: HouseholdMember | null;
+}
+
+export interface HomeTaskListResponse {
+  tasks: HomeTask[];
+}
+
+export interface HomeTaskResponse {
+  task: HomeTask;
+}
+
+export interface HomeTaskDeleteResponse {
+  success: boolean;
+  id: string;
+}
+
+export interface HouseholdMembersResponse {
+  members: HouseholdMember[];
+}
+
+export interface TaskCompletionsResponse {
+  completions: TaskCompletionEntry[];
+}

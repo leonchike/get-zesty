@@ -1,28 +1,28 @@
 ---
 name: get-zesty-recipe-manager
-version: 1.0.3
+version: 1.1.0
 description: >
-  Use for any query touching the user's personal recipes, digitized cookbook library, grocery list, kitchen inventory (pantry/spices/fridge/freezer), or meal planning in Get Zesty Recipe Manager. Triggers: "do I have a recipe for...", "what recipes do I have", "show my cookbooks", "add to my grocery list", "what's in my fridge/pantry/freezer", "what's expiring soon", "I just used the last of...", "what can I make with what I have", "plan my meals", "suggest dinner", "update/save/change my recipe", or anything about the user's own saved recipes, cookbooks, shopping list, or kitchen contents. Supplements Claude's general cooking knowledge — use external knowledge freely, but always use this skill when the user's own data is involved. Be proactive: end each response with a specific next-step offer (e.g. after a recipe → check inventory or add to groceries; after a meal plan → build a shopping list; after listing inventory → suggest a recipe using expiring items).
+  Use for any query touching the user's personal recipes, cookbook library, grocery list, kitchen inventory (pantry/fridge/freezer), meal planning, or household tasks in Get Zesty. Triggers: "do I have a recipe for...", "show my cookbooks", "add to my grocery list", "what's in my fridge/pantry", "what's expiring soon", "what can I make with what I have", "plan my meals", "update/save my recipe", "add a chore/home task", "what chores are due/overdue", "mark X as done", "remind me to change the filters every 3 months", "who did X last", or anything about the user's saved recipes, cookbooks, shopping list, kitchen contents, or home to-dos. Supplements Claude's general knowledge — use external knowledge freely, but always use this skill when the user's own data is involved. Be proactive: end each response with a specific next-step offer (after a recipe → check inventory; after a meal plan → build a shopping list; after completing a recurring chore → state its next due date).
 ---
 
 # Get Zesty Recipe Manager
 
-A personal recipe collection, digitized cookbook library, grocery list, and kitchen inventory tracker. Use the connected MCP tools to access the user's data — Claude's general cooking knowledge is always fair game alongside this.
+A personal recipe collection, digitized cookbook library, grocery list, kitchen inventory tracker, and household task manager. Use the connected MCP tools to access the user's data — Claude's general cooking knowledge is always fair game alongside this.
 
 **Core principle**: Always end with a proactive, meaningful next step. Don't just answer and stop — anticipate what the user will want to do next and offer it.
 
 ---
 
-## Four Data Sources
+## Five Data Sources
 
-The user has **four distinct kinds of data** — treat them differently:
+The user has **five distinct kinds of data** — treat them differently:
 
-| | Personal Recipes | Cookbook Recipes | Grocery List | Inventory |
-|---|---|---|---|---|
-| What it is | User-created / saved | Digitized from physical cookbooks | What to buy | What's already in the kitchen |
-| Editable? | ✅ Full CRUD | ❌ Read-only | ✅ Full CRUD | ✅ Full CRUD |
-| Search | Keyword + filters | Semantic / natural language | Listed by store section | Listed by location; substring search |
-| Tools | `searchRecipes`, `getRecipe`, `createRecipe`, `updateRecipe`, `deleteRecipe` | `searchCookbookRecipes`, `getCookbookRecipe`, `listCookbooks`, `listCookbookRecipes`, `searchByIngredient` | `getGroceryList`, `addGroceryItem`, `addMultipleGroceryItems`, `updateGroceryItem`, `completeGroceryItems`, `deleteGroceryItem` | `getInventory`, `addInventoryItem`, `addMultipleInventoryItems`, `updateInventoryItem`, `consumeInventoryItem`, `discardInventoryItem`, `deleteInventoryItem`, `listExpiringSoon` |
+| | Personal Recipes | Cookbook Recipes | Grocery List | Inventory | Home Tasks |
+|---|---|---|---|---|---|
+| What it is | User-created / saved | Digitized from physical cookbooks | What to buy | What's already in the kitchen | Household chores & maintenance |
+| Editable? | ✅ Full CRUD | ❌ Read-only | ✅ Full CRUD | ✅ Full CRUD | ✅ Full CRUD (members read-only) |
+| Search | Keyword + filters | Semantic / natural language | Listed by store section | Listed by location; substring search | Filtered by view (overdue/due soon) or assignee |
+| Tools | `searchRecipes`, `getRecipe`, `createRecipe`, `updateRecipe`, `deleteRecipe` | `searchCookbookRecipes`, `getCookbookRecipe`, `listCookbooks`, `listCookbookRecipes`, `searchByIngredient` | `getGroceryList`, `addGroceryItem`, `addMultipleGroceryItems`, `updateGroceryItem`, `completeGroceryItems`, `deleteGroceryItem` | `getInventory`, `addInventoryItem`, `addMultipleInventoryItems`, `updateInventoryItem`, `consumeInventoryItem`, `discardInventoryItem`, `deleteInventoryItem`, `listExpiringSoon` | `getHomeTasks`, `createHomeTask`, `updateHomeTask`, `completeHomeTask`, `uncompleteHomeTask`, `deleteHomeTask`, `listHouseholdMembers`, `getHomeTaskHistory` |
 
 **Groceries vs Inventory** — a crucial distinction:
 - **Groceries** = "what I need to buy" (a shopping list)
@@ -86,6 +86,22 @@ When the user says "add milk", clarify if ambiguous: are they shopping (grocerie
   - `itemId` (required). Prefer `consume`/`discard` unless the entry was created in error.
 - **`listExpiringSoon`** — Items expiring within N days, sorted by soonest. Params:
   - `withinDays` — number of days (default `3`). Great for "what should I cook this week?"
+
+### Home Task Tools
+- **`getHomeTasks`** — List household tasks sorted by due date. Params:
+  - `view` — `"all"` (default: every pending/active task, grouped Overdue / Due soon / Later / Anytime), `"overdue"`, `"dueSoon"` (next 7 days), or `"completed"` (finished one-offs). **"all" means pending — completed tasks only appear under `view: "completed"`.**
+  - `assigneeId` — filter to one member's tasks (ID from `listHouseholdMembers`)
+  - `dueWithinDays` — window for `"dueSoon"` (default 7)
+- **`createHomeTask`** — Create a one-off job or recurring chore. Params:
+  - `title` (required); `notes`, `category` (e.g. `"Maintenance"`, `"Cleaning"`), `dueDate` (`YYYY-MM-DD` or ISO)
+  - `isRecurring` — if true, `intervalValue` + `intervalUnit` (`"DAY"`/`"WEEK"`/`"MONTH"`/`"YEAR"`) are **both required** ("every 3 months" → `intervalValue: 3, intervalUnit: "MONTH"`)
+  - `assigneeId` — from `listHouseholdMembers`; never guess member IDs
+- **`updateHomeTask`** — Partial update; only provided fields change. Params: `taskId` (required) + any of the create fields. Set `isRecurring: false` to stop a chore repeating.
+- **`completeHomeTask`** — Mark a task done. Params: `taskId` (required), `completedById` (optional — who did it; defaults to the assignee). **Completing a recurring task never closes it** — it schedules the next occurrence from *today* (completion date + cadence, not the old due date). The response states the next due date; relay it to the user.
+- **`uncompleteHomeTask`** — Undo the latest completion; restores the prior due date and status. Params: `taskId`.
+- **`deleteHomeTask`** — Permanent delete including history; cannot be undone. Params: `taskId`. Prefer completing or stopping recurrence unless the task was created in error.
+- **`listHouseholdMembers`** — Members tasks can be assigned to, with IDs. Read-only — members are managed in the web app settings.
+- **`getHomeTaskHistory`** — A task's completion log (when + by whom). Params: `taskId`. Answers "when did we last..." / "who did X last?".
 
 ---
 
@@ -196,6 +212,38 @@ When the user says "add milk", clarify if ambiguous: are they shopping (grocerie
 4. Confirm with the returned ID
 5. **Proactive next steps**: offer to check inventory for what's already on hand, add missing ingredients to the grocery list, or include it in a meal plan
 
+### "What needs doing around the house?"
+*Triggered by: "what chores are due", "what's overdue", "what do I need to do this weekend", "any home tasks?"*
+
+1. `getHomeTasks(view: "overdue")` first — late tasks lead the answer
+2. `getHomeTasks(view: "dueSoon")` for the coming week (or `view: "all"` for the full picture)
+3. Present grouped by urgency, with assignees so household members know what's theirs
+4. **Proactive next steps**: offer to mark anything already done as complete, reassign tasks, or push a due date
+
+### Marking a Chore Done
+*Triggered by: "I changed the filters", "mark the fence painting as done", "Ada mowed the lawn"*
+
+1. `getHomeTasks` to find the task by title — **disambiguate if multiple match**; never guess
+2. If someone other than the assignee did it, resolve their ID via `listHouseholdMembers` and pass `completedById`
+3. `completeHomeTask(taskId, completedById?)`
+4. **Report the recurrence roll-forward**: for recurring tasks, tell the user the next due date from the response ("Done! Next filter change is due 2026-10-11."); for one-offs, confirm completion
+5. **Proactive next steps**: offer `uncompleteHomeTask` if it was a mistake, or show what else is due soon
+
+### Creating / Assigning a Recurring Chore
+*Triggered by: "remind me to clean the gutters every 6 months", "add a weekly task for Ada to water the plants"*
+
+1. If assigning by name, `listHouseholdMembers` first to resolve the ID — never guess member IDs
+2. `createHomeTask` with `isRecurring: true`, both interval fields, and a first `dueDate` (ask or infer a sensible start)
+3. Explain the cadence semantics briefly: each completion schedules the next occurrence from that day
+4. **Proactive next steps**: offer to list what else is assigned to that member, or set up related seasonal tasks
+
+### "Who did X last?" / Task History
+*Triggered by: "when did we last change the filters", "who cleaned the bathroom last", "how often do we actually mow"*
+
+1. `getHomeTasks` to find the task ID
+2. `getHomeTaskHistory(taskId)` — completion dates and who did each
+3. **Proactive next steps**: if the gap is longer than the cadence, point it out and offer to complete or reschedule
+
 ### Browsing the Cookbook Collection
 1. `listCookbooks` to show what's available
 2. Choose the right lookup approach:
@@ -225,6 +273,10 @@ Always close a response with a short, specific follow-up offer. Match it to what
 | Listed expiring items | "Want recipe ideas for any of these before they go bad?" |
 | Consumed an item | "Should I add it back to the grocery list to restock?" |
 | Logged leftovers | "I'll flag it in `listExpiringSoon` so you don't forget — want to plan a leftover meal for later this week?" |
+| Completed a recurring chore | "Done — next occurrence is due [date]. Want to see what else is due this week?" |
+| Listed overdue tasks | "Want me to mark any of these done, or push their due dates?" |
+| Created a home task | "Added. Should I assign it to someone, or set up any related seasonal tasks?" |
+| Showed task history | "The gap's been longer than the cadence — want me to reschedule or mark it done now?" |
 
 Keep the offer **specific and actionable** — not generic like "let me know if you need anything else."
 
@@ -253,6 +305,13 @@ Default locations (seeded for every user): **Pantry**, **Spices**, **Fridge**, *
 
 These are intentionally distinct. When the user says "I ate the last apple" use `consumeInventoryItem`; when they say "the bread went moldy" use `discardInventoryItem`. The user-facing UI shows consumed and discarded items in separate collapsed sections.
 
+### Home Task Values
+
+- **`view`** — `all` (pending), `overdue`, `dueSoon`, `completed`
+- **`intervalUnit`** — `DAY`, `WEEK`, `MONTH`, `YEAR` (uppercase); pairs with `intervalValue ≥ 1`
+- **Task status** — `ACTIVE` (pending) or `COMPLETED` (finished one-off). Recurring tasks stay `ACTIVE` forever; their "doneness" lives in the completion history.
+- **Dates** — `dueDate` accepts ISO 8601 or `YYYY-MM-DD`.
+
 ---
 
 ## Behavior Notes
@@ -274,3 +333,7 @@ These are intentionally distinct. When the user says "I ate the last apple" use 
 - **Normalize `cuisineType` / `mealType` before saving**: Always lowercase these and map synonyms ("Main Course" → `main`, "Side Dish" → `side`, "Drink"/"Beverage" → `drinks`, "Pantry Staple" → `pantry-staple`). The DB is case-sensitive and the edit UI won't pre-fill mismatched values.
 - **Meal plan grocery lists**: Use `addMultipleGroceryItems` per recipe, passing `recipeId` for personal recipes so items are linked back to their source.
 - **Leftover linking**: When logging leftovers from a cooked recipe, pass `recipeId` to `addInventoryItem` so the inventory entry shows "from <Recipe Title>" in the UI.
+- **Recurrence anchors on completion, not the calendar**: completing "every 3 months" schedules the next occurrence 3 months from *today*, even if the task was badly overdue. Never tell the user the next date is "old due date + cadence".
+- **Household members are read-only via MCP**: `listHouseholdMembers` resolves names → IDs for `assigneeId`/`completedById`; adding or editing members happens in the web app settings — direct the user there.
+- **`uncompleteHomeTask` is the undo**: it deletes the latest completion record and restores the exact prior due date. Offer it right after any completion that might have been a mistake.
+- **Home tasks ≠ groceries**: "add a task to buy paint" is still a home task if it's about the job ("paint the fence"), but pure shopping items belong on the grocery list. When ambiguous, ask.
