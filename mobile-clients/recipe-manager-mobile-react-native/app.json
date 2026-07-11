@@ -2,19 +2,19 @@
   "expo": {
     "name": "Zesty",
     "slug": "recipe-manager-mobile",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "buildNumber": "16",
+      "buildNumber": "17",
       "supportsTablet": true,
       "bundleIdentifier": "com.leonchike.recipe-manager-mobile",
       "infoPlist": {
         "CFBundleDisplayName": "Zesty",
-        "CFBundleShortVersionString": "1.2.0",
-        "CFBundleVersion": "1",
+        "CFBundleShortVersionString": "1.2.1",
+        "CFBundleVersion": "17",
         "NSPhotoLibraryUsageDescription": "Zesty uses your photo library to let you upload an image for your recipe. This image will appear as the main recipe image.",
         "NSCameraUsageDescription": "Zesty uses your camera to let you upload an image for your recipe. This image will appear as the main recipe image.",
         "UIRequiresFullScreen": false,
