@@ -30,10 +30,7 @@ export function Modal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className={clsx(
-          "dark:bg-pageBg-dark shadow-none border-none",
-          className
-        )}
+        className={clsx(className)}
       >
         {(title || description) && (
           <DialogHeader>

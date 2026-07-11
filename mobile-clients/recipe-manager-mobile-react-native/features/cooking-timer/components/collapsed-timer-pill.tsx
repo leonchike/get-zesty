@@ -18,17 +18,7 @@ import { formatTimerDisplay } from "@/lib/functions/format-timer-display";
 import { cn } from "@/lib/helpers/cn";
 import { useDeviceType } from "@/hooks/useDeviceType";
 import { useColorScheme } from "@/hooks/useColorScheme";
-
-const liquidGlassShadow = Platform.select({
-  ios: {
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-  },
-  android: { elevation: 12 },
-  default: {},
-});
+import { liquidGlassShadow } from "@/constants/glass";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 

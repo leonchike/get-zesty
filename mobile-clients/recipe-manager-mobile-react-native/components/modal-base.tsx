@@ -58,7 +58,7 @@ const ModalBase = ({
   const content = withInput ? (
     <KeyboardAvoidingView
       behavior="padding"
-      className="items-center justify-center flex-1 px-3 bg-zinc-900/60 dark:bg-zinc-900/95"
+      className="items-center justify-center flex-1 px-3 bg-zinc-900/60 dark:bg-zinc-900/80"
       onTouchStart={(e) => {
         if (e.target === e.currentTarget) {
           onClose?.();
@@ -79,7 +79,7 @@ const ModalBase = ({
     </KeyboardAvoidingView>
   ) : (
     <View
-      className="items-center justify-center flex-1 px-3 bg-zinc-900/60 dark:bg-zinc-900/95"
+      className="items-center justify-center flex-1 px-3 bg-zinc-900/60 dark:bg-zinc-900/80"
       onTouchStart={(e) => {
         if (e.target === e.currentTarget) {
           onClose?.();

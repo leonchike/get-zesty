@@ -116,6 +116,8 @@ const config = {
         },
         "cooking-bg": "hsl(var(--cooking-bg))",
         "sidebar-bg": "hsl(var(--sidebar-bg))",
+        glass: "hsl(var(--glass-bg) / <alpha-value>)",
+        "glass-border": "hsl(var(--glass-border))",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -131,6 +133,7 @@ const config = {
           "0 10px 15px -3px rgba(41, 33, 25, 0.08), 0 4px 6px -4px rgba(41, 33, 25, 0.04)",
         "warm-glow":
           "0 0 15px rgba(255, 56, 92, 0.15)",
+        glass: "var(--glass-shadow)",
       },
       keyframes: {
         "accordion-down": {

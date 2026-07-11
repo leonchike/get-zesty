@@ -7,7 +7,13 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const { pathname } = req.nextUrl;
 
-  const protectedPaths = ["/settings", "/dashboard", "/groceries", "/menu"];
+  const protectedPaths = [
+    "/settings",
+    "/dashboard",
+    "/groceries",
+    "/menu",
+    "/home-tasks",
+  ];
 
   const publicPaths = ["/privacy", "/recipes"];
 

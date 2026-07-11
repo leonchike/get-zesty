@@ -39,6 +39,16 @@ body {
     --shadow-md: 0 4px 6px -1px rgba(41, 33, 25, 0.08), 0 2px 4px -2px rgba(41, 33, 25, 0.05);
     --shadow-lg: 0 10px 15px -3px rgba(41, 33, 25, 0.08), 0 4px 6px -4px rgba(41, 33, 25, 0.04);
     --shadow-glow: 0 0 15px rgba(255, 56, 92, 0.15);
+
+    /* Liquid glass */
+    --glass-bg: 36 33% 97%;
+    --glass-bg-alpha: 0.65;
+    --glass-bg-alpha-strong: 0.8;
+    --glass-border: 0 0% 100% / 0.45;
+    --glass-highlight: 0 0% 100% / 0.6;
+    --glass-shadow: 0 8px 32px rgba(41, 33, 25, 0.1), 0 1px 2px rgba(41, 33, 25, 0.04);
+    --glass-blur: 16px;
+    --glass-blur-strong: 24px;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -72,6 +82,13 @@ body {
       --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
       --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.2);
       --shadow-glow: 0 0 15px rgba(255, 77, 109, 0.2);
+
+      --glass-bg: 20 10% 12%;
+      --glass-bg-alpha: 0.55;
+      --glass-bg-alpha-strong: 0.75;
+      --glass-border: 0 0% 100% / 0.12;
+      --glass-highlight: 0 0% 100% / 0.08;
+      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
     }
   }
 }
@@ -125,6 +142,48 @@ body {
   @media (prefers-color-scheme: dark) {
     .bg-grain::before {
       opacity: 0.05;
+    }
+  }
+
+  /* Liquid glass surfaces. Opaque fallback first; upgraded when backdrop-filter
+     is supported. Specular edge = hairline border + inset top highlight
+     (box-shadow so it composes with drop shadows and doesn't fight .bg-grain::before). */
+  .glass,
+  .glass-strong,
+  .glass-overlay {
+    background-color: hsl(var(--glass-bg) / 0.97);
+    border: 1px solid hsl(var(--glass-border));
+    box-shadow: inset 0 1px 0 hsl(var(--glass-highlight));
+  }
+
+  .glass-overlay {
+    box-shadow:
+      inset 0 1px 0 hsl(var(--glass-highlight)),
+      var(--glass-shadow);
+  }
+
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .glass {
+      background-color: hsl(var(--glass-bg) / var(--glass-bg-alpha));
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+      backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+    }
+
+    .glass-strong,
+    .glass-overlay {
+      background-color: hsl(var(--glass-bg) / var(--glass-bg-alpha-strong));
+      -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(1.4);
+      backdrop-filter: blur(var(--glass-blur-strong)) saturate(1.4);
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .glass,
+    .glass-strong,
+    .glass-overlay {
+      background-color: hsl(var(--glass-bg) / 0.97);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
     }
   }
 

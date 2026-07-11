@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { cn } from "@/lib/helpers/cn";
 import { useDeviceType } from "@/hooks/useDeviceType";
+import GlassView from "@/components/ui/glass-view";
 
 interface PopupPickerProps<T> {
   title?: string;
@@ -125,17 +126,13 @@ const PopupPicker = <T,>({
           }}
           onPress={handleClose}
         >
-          <View
-            className={cn(
-              "bg-background-light dark:bg-background-dark",
-              "shadow-lg shadow-black/20 dark:shadow-gray-800/50",
-              "rounded-lg",
-              "max-h-[50%]",
-              "w-[80%]",
-              "border border-border-light dark:border-border-dark"
-            )}
+          <GlassView
+            intensity="strong"
+            rounded="rounded-2xl"
+            className="w-[80%]"
           >
             <FlatList
+              style={{ maxHeight: height * 0.5 }}
               data={options}
               keyExtractor={(item) => item}
               renderItem={({ item, index }) => (
@@ -160,7 +157,7 @@ const PopupPicker = <T,>({
                 </TouchableOpacity>
               )}
             />
-          </View>
+          </GlassView>
         </Pressable>
       </Modal>
     </View>
